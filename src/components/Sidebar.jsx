@@ -1,19 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { 
   Home,
   Search,
   Filter,
   Megaphone,
-  Compass,
-  Target,
-  PlusCircle,
-  CalendarDays,
   Users,
   FileText,
   MessageSquare,
   HelpCircle,
   ChevronDown,
-  ChevronUp
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useSidebar } from '../context/SidebarContext'
@@ -24,7 +19,6 @@ const menuItems = [
   { label: 'Funnel', path: '/funnel', icon: Filter },
   { 
     label: 'Content & Ads', 
-    path: '/content-marketing', 
     icon: Megaphone,
     children: [
       { label: 'Discover', path: '/content/discover' },
@@ -32,7 +26,6 @@ const menuItems = [
       { label: 'Create', path: '/content/create' },
       { label: 'Schedule', path: '/content/schedule' },
     ],
-    expanded: true
   },
   { label: 'CRM', path: '/crm', icon: Users },
   { label: 'Documents', path: '/documents', icon: FileText },
@@ -43,6 +36,13 @@ const menuItems = [
 export default function Sidebar() {
   const { isCollapsed } = useSidebar()
   const location = useLocation()
+
+  // Track which groups are open by their label key
+  const [openGroups, setOpenGroups] = useState({ 'Content & Ads': false })
+
+  const toggleGroup = (label) => {
+    setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }))
+  }
 
   return (
     <aside 
@@ -61,35 +61,56 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto no-scrollbar">
         {menuItems.map((item, idx) => {
           const Icon = item.icon
-          const isActive = location.pathname === item.path || (item.children && item.children.some(c => location.pathname === c.path))
-          
+          const hasChildren = !!item.children
+          const isGroupOpen = openGroups[item.label]
+          const isGroupActive = hasChildren && item.children.some(c => location.pathname === c.path)
+          const isActive = !hasChildren && location.pathname === item.path
+
+          const rowClass = `flex items-center rounded-lg text-sm font-medium transition-colors w-full text-left ${
+            isCollapsed ? 'justify-center p-3' : 'px-4 py-3 gap-3'
+          } ${
+            isActive || isGroupActive
+              ? 'bg-brand-50 text-brand-500 dark:bg-brand-500/10'
+              : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/[0.03]'
+          }`
+
           return (
             <div key={idx} className="flex flex-col gap-1">
-              <Link 
-                to={item.path} 
-                className={`flex items-center rounded-lg text-sm font-medium transition-colors ${isCollapsed ? 'justify-center p-3' : 'px-4 py-3 gap-3'} ${
-                  isActive 
-                    ? 'bg-brand-50 text-brand-500 dark:bg-brand-500/10' 
-                    : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/[0.03]'
-                }`}
-              >
-                <Icon size={20} strokeWidth={2} />
-                {!isCollapsed && (
-                  <>
-                    <span>{item.label}</span>
-                    {item.children && (
-                      <ChevronDown size={16} className={`ml-auto text-gray-400 transition-transform ${item.expanded ? 'rotate-180' : ''}`} />
-                    )}
-                  </>
-                )}
-              </Link>
-              
-              {!isCollapsed && item.children && item.expanded && (
-                <div className="ml-9 flex flex-col gap-1 mt-1">
+              {/* Parent row — button for groups, Link for regular items */}
+              {hasChildren ? (
+                <button
+                  onClick={() => !isCollapsed && toggleGroup(item.label)}
+                  className={rowClass}
+                >
+                  <Icon size={20} strokeWidth={2} className="shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">{item.label}</span>
+                      <ChevronDown
+                        size={15}
+                        className={`text-gray-400 transition-transform duration-200 ${isGroupOpen ? 'rotate-180' : ''}`}
+                      />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <Link to={item.path} className={rowClass}>
+                  <Icon size={20} strokeWidth={2} className="shrink-0" />
+                  {!isCollapsed && <span>{item.label}</span>}
+                </Link>
+              )}
+
+              {/* Children — animate open/close */}
+              {!isCollapsed && hasChildren && (
+                <div
+                  className={`ml-9 flex flex-col gap-1 mt-1 overflow-hidden transition-all duration-200 ${
+                    isGroupOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                >
                   {item.children.map((child, cIdx) => (
-                    <Link 
-                      key={cIdx} 
-                      to={child.path} 
+                    <Link
+                      key={cIdx}
+                      to={child.path}
                       className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         location.pathname === child.path
                           ? 'text-brand-500 bg-brand-50/50 dark:bg-brand-500/5'
