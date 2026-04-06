@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard'
 import Discover from './components/Discover'
 import CreateContent from './components/create/CreateContent'
 import ManageAds from './components/ads/ManageAds'
+import ContentCalendar from './components/calendar/ContentCalendar'
 import { ThemeProvider } from './context/ThemeContext'
 import { SidebarProvider, useSidebar } from './context/SidebarContext'
 
@@ -48,6 +49,7 @@ function App() {
             <Route path="/content/discover" element={<Layout><Discover /></Layout>} />
             <Route path="/content/create" element={<Layout><CreateContent /></Layout>} />
             <Route path="/content/ads" element={<Layout><ManageAds /></Layout>} />
+            <Route path="/content/schedule" element={<Layout><ContentCalendar /></Layout>} />
             
             {/* Catch-all redirect to Home for any placeholder paths */}
             <Route path="*" element={<Navigate to="/" replace />} />
