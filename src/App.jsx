@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
 import Discover from './components/Discover'
+import CreateContent from './components/create/CreateContent'
 import { ThemeProvider } from './context/ThemeContext'
 import { SidebarProvider, useSidebar } from './context/SidebarContext'
 
@@ -44,6 +45,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout><Dashboard /></Layout>} />
             <Route path="/content/discover" element={<Layout><Discover /></Layout>} />
+            <Route path="/content/create" element={<Layout><CreateContent /></Layout>} />
             
             {/* Catch-all redirect to Home for any placeholder paths */}
             <Route path="*" element={<Navigate to="/" replace />} />
