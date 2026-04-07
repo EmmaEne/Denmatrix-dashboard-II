@@ -102,6 +102,7 @@ export default function ContentCalendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [draggedDraft, setDraggedDraft] = useState(null)
   const [detailPost, setDetailPost] = useState(null)
+  const [detailDraft, setDetailDraft] = useState(null)
 
   // Schedule form state
   const [scheduleForm, setScheduleForm] = useState({
@@ -399,7 +400,8 @@ export default function ContentCalendar() {
                     draggable
                     onDragStart={() => handleDragStart(draft)}
                     onDragEnd={handleDragEnd}
-                    className="group flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02] hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-theme-xs cursor-grab active:cursor-grabbing transition-all"
+                    onClick={() => setDetailDraft(draft)}
+                    className="group flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02] hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-theme-xs cursor-grab active:cursor-grabbing transition-all pointer-events-auto active:scale-95"
                   >
                     {/* Drag handle */}
                     <div className="shrink-0 mt-0.5 text-gray-300 dark:text-gray-600 group-hover:text-gray-400">
@@ -553,6 +555,74 @@ export default function ContentCalendar() {
                   className="flex-1 flex items-center justify-center gap-2 h-11 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
                 >
                   Done
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+      </Dialog>
+
+      {/* ═══ DRAFT DETAIL MODAL ═══ */}
+      <Dialog isOpen={!!detailDraft} onClose={() => setDetailDraft(null)} title="Draft Content">
+        {detailDraft && (() => {
+          const plat = platformMap[detailDraft.platform]
+          const PlatIcon = plat?.icon
+          const suggestedTime = detailDraft.platform === 'instagram' ? '6:00 PM' : detailDraft.platform === 'tiktok' ? '12:00 PM' : '9:00 AM'
+          
+          return (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${plat?.bg}`}>
+                    {PlatIcon && <PlatIcon size={18} className={plat.color} />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">{plat?.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                      <Clock size={10} className="text-amber-500" />
+                      Suggested Time: <span className="font-semibold text-gray-700 dark:text-gray-300">{suggestedTime}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="px-3 py-1 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500 text-[10px] font-bold uppercase tracking-wider">Draft</div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Post Caption</label>
+                <div className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 p-5 shadow-inner">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic">"{detailDraft.caption}"</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.02] p-8 text-center">
+                <ImageIcon size={32} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-xs text-gray-400 font-medium">No media uploaded yet</p>
+                <p className="text-[10px] text-gray-400 mt-1 italic">Click 'Schedule Now' to add media files</p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setDetailDraft(null)}
+                  className="flex-1 h-11 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setDetailDraft(null);
+                    setSelectedDate(todayKey);
+                    setScheduleForm({
+                      platform: detailDraft.platform,
+                      time: suggestedTime.includes('AM') ? suggestedTime.replace(' AM', '') : String(parseInt(suggestedTime)+12) + ':00',
+                      caption: detailDraft.caption
+                    });
+                    setDraggedDraft(detailDraft); // Treat as a "staged" draft for the scheduler
+                    setModalOpen(true);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 h-11 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
+                >
+                  <CalendarDays size={18} />
+                  Schedule Now
                 </button>
               </div>
             </div>

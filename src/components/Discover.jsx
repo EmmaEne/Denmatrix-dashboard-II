@@ -344,9 +344,16 @@ export default function Discover() {
   const filteredContent = mockContent.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesType = activeType === 'all' || item.type === activeType
-    const matchesFilters = activeFilters.length === 0 || activeFilters.includes(item.category)
+    
+    // Split filters into category filters and specific label filters (sponsored/content)
+    const categoryFilters = activeFilters.filter(f => f !== 'sponsored' && f !== 'content')
+    const labelFilters = activeFilters.filter(f => f === 'sponsored' || f === 'content')
+    
+    const matchesCategory = categoryFilters.length === 0 || categoryFilters.includes(item.category)
+    const matchesLabel = labelFilters.length === 0 || labelFilters.includes(item.contentLabel)
     const matchesPlatform = !activePlatform || item.platform === activePlatform
-    return matchesSearch && matchesType && matchesFilters && matchesPlatform
+    
+    return matchesSearch && matchesType && matchesCategory && matchesLabel && matchesPlatform
   })
 
   // Helper to get platform icon component
@@ -433,7 +440,7 @@ export default function Discover() {
       </div>
 
       {/* ─── Popular Keywords Row ─── */}
-      <div className="mb-8 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {popularKeywords.map(keyword => (
           <button
             key={keyword}
@@ -449,8 +456,33 @@ export default function Discover() {
         ))}
       </div>
 
-      {/* Content Type Toggle */}
-      <div className="mb-8 flex items-center justify-between">
+      {/* ─── Hot Topics & FAQs (New Section) ─── */}
+      <div className="mb-8 rounded-2xl border border-brand-500/10 bg-brand-50/30 p-6 dark:border-brand-500/20 dark:bg-brand-500/5">
+        <div className="flex items-center gap-2 mb-4">
+          <Lightbulb size={16} className="text-brand-500" />
+          <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Hot Topics & Dental FAQs</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            "Why are my teeth yellow even after brushing?",
+            "Is charcoal toothpaste actually safe for enamel?",
+            "How to stop bleeding gums in 3 days",
+            "Are dental implants worth the cost?"
+          ].map((topic, i) => (
+            <button 
+              key={i} 
+              onClick={() => setSearchQuery(topic)}
+              className="flex items-start gap-3 p-3 rounded-xl bg-white border border-gray-100 text-left hover:border-brand-500/30 hover:shadow-theme-sm transition-all dark:bg-gray-900 dark:border-gray-800"
+            >
+              <div className="mt-0.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
+              <span className="text-xs text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{topic}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Content Type Toggle & Sponsored Filter ─── */}
+      <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-gray-800">
           {contentTypes.map(type => {
             const Icon = type.icon
@@ -469,6 +501,29 @@ export default function Discover() {
               </button>
             )
           })}
+        </div>
+
+        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-gray-800">
+          <button
+            onClick={() => toggleFilter('sponsored')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeFilters.includes('sponsored')
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Ads Only
+          </button>
+          <button
+            onClick={() => toggleFilter('content')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeFilters.includes('content')
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Organic Only
+          </button>
         </div>
       </div>
 
@@ -526,10 +581,10 @@ export default function Discover() {
                   {item.title}
                 </h3>
                 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                      <Heart size={14} className="text-error-500" />
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-900 transition-colors">
+                      <Heart size={14} className="group-hover:fill-error-500 text-error-500 transition-all" />
                       {item.likes}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -538,8 +593,9 @@ export default function Discover() {
                     </div>
                   </div>
                   <button 
-                    className="text-gray-400 hover:text-brand-500 transition-colors"
-                    onClick={(e) => { e.stopPropagation() }}
+                    aria-label="Share Content"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all active:scale-90"
+                    onClick={(e) => { e.stopPropagation(); console.log('Sharing:', item.title); alert(`Shared link for: ${item.title}`) }}
                   >
                     <Share2 size={16} />
                   </button>

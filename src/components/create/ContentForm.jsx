@@ -94,7 +94,7 @@ export default function ContentForm({ inputs, onChange }) {
       </div>
 
       {/* Tone */}
-      <div>
+      <div className="pb-2">
         <div className={labelClass}>
           <Volume2 size={14} className="text-gray-400" />
           <span className={labelTextClass}>Tone</span>
@@ -113,6 +113,33 @@ export default function ContentForm({ inputs, onChange }) {
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"/></svg>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Avatar / Presenter Image */}
+      <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+        <div className={labelClass}>
+          <Users size={14} className="text-brand-500" />
+          <span className={labelTextClass}>AI Avatar / Presenter Image</span>
+        </div>
+        <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.01]">
+          <div className="h-16 w-16 rounded-full overflow-hidden bg-white border border-gray-100 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-center shrink-0">
+            {inputs.avatarImage ? (
+              <img src={inputs.avatarImage} className="h-full w-full object-cover" alt="Avatar Preview" />
+            ) : (
+              <Users size={24} className="text-gray-300" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Upload the person to be used as the video presenter</p>
+            <button 
+              type="button"
+              onClick={() => handleChange('avatarImage', 'https://images.unsplash.com/photo-1559839734-2b71f1536783?w=100&h=100&fit=crop')} 
+              className="text-xs font-bold text-brand-500 hover:text-brand-600 transition-colors"
+            >
+              Choose Image
+            </button>
           </div>
         </div>
       </div>

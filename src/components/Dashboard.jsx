@@ -121,7 +121,8 @@ export default function Dashboard() {
               <button
                 key={card.path}
                 onClick={() => navigate(card.path)}
-                className={`group relative text-left rounded-2xl border border-gray-200 bg-white p-7 transition-all hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03] ${card.borderHover}`}
+                aria-label={`Go to ${card.title}`}
+                className={`group relative text-left rounded-2xl border border-gray-200 bg-white p-7 transition-all hover:shadow-theme-lg hover:scale-[1.01] active:scale-[0.98] cursor-pointer dark:border-gray-800 dark:bg-white/[0.03] ${card.borderHover}`}
               >
                 <div className="mb-6">
                   <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${card.iconBg}`}>
@@ -151,18 +152,36 @@ export default function Dashboard() {
           </div>
           
           <ul className="space-y-4">
-            {[
-              "You have no posts scheduled for tomorrow",
-              "Try promoting teeth whitening this week",
-              "Your ad campaign CTR is below average"
-            ].map((suggestion, idx) => (
-              <li key={idx} className="flex items-start gap-3 group cursor-default">
-                <div className="mt-1.5 h-1 w-1 rounded-full bg-brand-500 ring-4 ring-brand-500/10 shrink-0" />
+          {[
+            {
+              text: "You have no posts scheduled for tomorrow",
+              path: "/content/schedule",
+              icon: CalendarRange
+            },
+            {
+              text: "Try promoting teeth whitening this week",
+              path: "/content/discover",
+              icon: Lightbulb
+            },
+            {
+              text: "Your ad campaign CTR is below average",
+              path: "/content/ads",
+              icon: Megaphone
+            }
+          ].map((suggestion, idx) => (
+            <li key={idx}>
+              <button 
+                onClick={() => navigate(suggestion.path)}
+                className="flex items-start gap-4 w-full p-2.5 -m-2.5 rounded-xl transition-all hover:bg-gray-50 dark:hover:bg-white/5 group text-left"
+              >
+                <div className="mt-1 h-1.5 w-1.5 rounded-full bg-brand-500 ring-4 ring-brand-500/10 shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
-                  {suggestion}
+                  {suggestion.text}
                 </span>
-              </li>
-            ))}
+                <ChevronRight size={14} className="ml-auto text-gray-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </button>
+            </li>
+          ))}
           </ul>
         </div>
       </div>

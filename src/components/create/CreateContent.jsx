@@ -48,6 +48,7 @@ export default function CreateContent() {
     audience: 'young-adults',
     goal: 'bookings',
     tone: 'friendly',
+    avatarImage: null,
   })
   const [selectedPlatform, setSelectedPlatform] = useState('instagram')
   const [generatedContent, setGeneratedContent] = useState(null)
