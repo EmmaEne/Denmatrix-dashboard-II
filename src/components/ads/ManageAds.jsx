@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import {
   Plus,
   DollarSign,
@@ -22,7 +22,10 @@ import {
   CheckCheck,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Send,
+  Bot
 } from 'lucide-react'
 import Dialog from '../common/Dialog'
 
@@ -105,6 +108,17 @@ export default function ManageAds() {
 
   // AI Assist state
   const [isAiGenerating, setIsAiGenerating] = useState(false)
+
+  // AI Chatbot state
+  const [showChat, setShowChat] = useState(false)
+  const [chatMessages, setChatMessages] = useState([
+    { id: 1, role: 'ai', text: `Hi! I'm your AI Campaign Builder. Tell me about the ad you want to run — audience, budget, goal — and I'll build the campaign for you.`, timestamp: new Date() }
+  ])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const [chatProposal, setChatProposal] = useState(null)
+  const chatEndRef = useRef(null)
+  const chatInputRef = useRef(null)
 
   // Create campaign form state
   const [newCampaign, setNewCampaign] = useState({
@@ -220,6 +234,130 @@ export default function ManageAds() {
       }))
       setIsAiGenerating(false)
     }, 1500)
+  }
+
+  // ─── AI Chat Helpers ───
+  useEffect(() => {
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, chatLoading])
+
+  const parseCampaignFromMessage = (msg) => {
+    const lower = msg.toLowerCase()
+    let audience = 'general'
+    let location = ''
+    let budget = '500'
+    let headline = ''
+    let caption = ''
+    let ageRange = '18-65'
+
+    // Parse audience
+    if (lower.includes('overdue') || lower.includes('recall')) audience = 'overdue-patients'
+    else if (lower.includes('parent') || lower.includes('kid') || lower.includes('children')) audience = 'parents'
+    else if (lower.includes('young') || lower.includes('cosmetic') || lower.includes('whitening')) audience = 'young-adults'
+    else if (lower.includes('senior') || lower.includes('elder')) audience = 'seniors'
+
+    // Parse location
+    const locationMatch = msg.match(/(?:in|near|around|targeting)\s+([A-Z][a-zA-Z\s,]+?)(?:\.|,|\s+targeting|\s+budget|\s+for|$)/i)
+    if (locationMatch) location = locationMatch[1].trim()
+
+    // Parse budget
+    const budgetMatch = msg.match(/(?:budget|spend|\$|₦|NGN)\s*([\d,]+)/i)
+    if (budgetMatch) budget = budgetMatch[1].replace(/,/g, '')
+
+    // Generate contextual creative
+    if (audience === 'overdue-patients') {
+      headline = 'It\'s Time For Your Check-Up!'
+      caption = `Don't let your dental health fall behind. Book your overdue appointment today and get 15% off your next visit.${location ? ` Serving ${location}.` : ''} Your smile deserves attention! 🦷`
+      ageRange = '25-65'
+    } else if (audience === 'parents') {
+      headline = 'Kids Dental Day — Fun & Painless!'
+      caption = `Make your child's dental visit an adventure! 🎈 Gentle care, friendly staff, and zero tears.${location ? ` Now in ${location}.` : ''} Book today!`
+      ageRange = '25-50'
+    } else if (audience === 'young-adults') {
+      headline = 'Get Your Dream Smile ✨'
+      caption = `Professional whitening & cosmetic treatments starting at just $99.${location ? ` Visit us in ${location}.` : ''} Results in one session!`
+      ageRange = '18-35'
+    } else {
+      headline = 'Your Smile, Our Priority'
+      caption = `Professional dental care tailored for you.${location ? ` Now serving ${location}.` : ''} Book your appointment and experience the difference. 😁`
+    }
+
+    return {
+      platform: selectedAccount.platform,
+      headline,
+      caption,
+      audience,
+      location,
+      ageRange,
+      budget,
+      duration: '14'
+    }
+  }
+
+  const handleChatSend = () => {
+    const text = chatInput.trim()
+    if (!text || chatLoading) return
+
+    const userMsg = { id: Date.now(), role: 'user', text, timestamp: new Date() }
+    setChatMessages(prev => [...prev, userMsg])
+    setChatInput('')
+    setChatLoading(true)
+
+    // Simulate AI thinking
+    setTimeout(() => {
+      const proposal = parseCampaignFromMessage(text)
+      setChatProposal(proposal)
+
+      const aiMsg = {
+        id: Date.now() + 1,
+        role: 'ai',
+        text: `I've built a campaign based on your request. Here's what I suggest:`,
+        timestamp: new Date(),
+        proposal
+      }
+      setChatMessages(prev => [...prev, aiMsg])
+      setChatLoading(false)
+    }, 2000)
+  }
+
+  const handleChatLaunch = (proposal) => {
+    const launched = {
+      id: campaigns.length + 1,
+      name: proposal.headline,
+      platform: proposal.platform,
+      status: 'Active',
+      budget: `$${proposal.budget}`,
+      spend: '$0.00',
+      ctr: '0.0%',
+      impressions: '0',
+      clicks: '0',
+      conversions: '0'
+    }
+    setCampaigns(prev => [launched, ...prev])
+    setChatProposal(null)
+    const confirmMsg = {
+      id: Date.now(),
+      role: 'ai',
+      text: `🚀 Campaign "${proposal.headline}" is now live! You can track it in the dashboard. Want to create another one?`,
+      timestamp: new Date()
+    }
+    setChatMessages(prev => [...prev, confirmMsg])
+  }
+
+  const handleChatEditProposal = (proposal) => {
+    // Load proposal into the Create Campaign modal for manual editing
+    setNewCampaign(proposal)
+    setCreateStep(1)
+    setShowCreateModal(true)
+    setShowChat(false)
+    setChatProposal(null)
+    const editMsg = {
+      id: Date.now(),
+      role: 'ai',
+      text: `I've loaded the campaign into the editor so you can fine-tune it. Make your changes and launch when ready!`,
+      timestamp: new Date()
+    }
+    setChatMessages(prev => [...prev, editMsg])
   }
 
   const handleConnectAccount = (e) => {
@@ -1083,6 +1221,139 @@ export default function ManageAds() {
           )
         })()}
       </Dialog>
+
+      {/* ═══ AI CHATBOT ═══ */}
+      {/* Floating Chat Toggle */}
+      <button
+        onClick={() => { setShowChat(!showChat); setTimeout(() => chatInputRef.current?.focus(), 200) }}
+        className={`fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-90 ${
+          showChat
+            ? 'bg-gray-800 dark:bg-gray-700 text-white rotate-90'
+            : 'bg-brand-500 text-white hover:bg-brand-600 shadow-brand-500/30'
+        }`}
+      >
+        {showChat ? <X size={22} /> : <Bot size={22} />}
+      </button>
+
+      {/* Chat Panel */}
+      <div className={`fixed bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)] rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900 transition-all duration-300 origin-bottom-right ${
+        showChat ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'
+      }`}>
+        {/* Chat Header */}
+        <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="h-9 w-9 rounded-xl bg-brand-500 flex items-center justify-center text-white">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">AI Campaign Builder</h3>
+            <p className="text-[10px] text-gray-400 font-medium">Describe your ad and I'll build it</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-success-500 animate-pulse" />
+            <span className="text-[10px] font-semibold text-success-500">Online</span>
+          </div>
+        </div>
+
+        {/* Chat Messages */}
+        <div className="h-[380px] overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {chatMessages.map(msg => (
+            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] space-y-2 ${
+                msg.role === 'user' ? '' : ''
+              }`}>
+                <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-brand-500 text-white rounded-br-md'
+                    : 'bg-gray-100 text-gray-800 dark:bg-white/[0.05] dark:text-gray-200 rounded-bl-md'
+                }`}>
+                  {msg.text}
+                </div>
+
+                {/* Campaign Proposal Card */}
+                {msg.proposal && (
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/80 dark:border-gray-800 dark:bg-white/[0.03] p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Rocket size={14} className="text-brand-500" />
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Campaign Proposal</span>
+                    </div>
+                    {[
+                      { label: 'Headline', value: msg.proposal.headline },
+                      { label: 'Caption', value: msg.proposal.caption.length > 80 ? msg.proposal.caption.slice(0, 80) + '…' : msg.proposal.caption },
+                      { label: 'Audience', value: msg.proposal.audience.replace(/-/g, ' ') },
+                      { label: 'Location', value: msg.proposal.location || 'Broad' },
+                      { label: 'Budget', value: `$${msg.proposal.budget}/day` },
+                      { label: 'Duration', value: `${msg.proposal.duration} days` },
+                    ].map(row => (
+                      <div key={row.label} className="flex items-start justify-between py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider shrink-0">{row.label}</span>
+                        <span className="text-[11px] font-medium text-gray-800 dark:text-gray-200 text-right ml-4">{row.value}</span>
+                      </div>
+                    ))}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => handleChatEditProposal(msg.proposal)}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-[11px] font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-600 transition-all"
+                      >
+                        <Pencil size={12} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleChatLaunch(msg.proposal)}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-brand-500 text-white rounded-lg text-[11px] font-bold hover:bg-brand-600 transition-colors shadow-md shadow-brand-500/20"
+                      >
+                        <Rocket size={12} />
+                        Launch Now
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <span className="text-[9px] text-gray-400 block px-1">
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+          ))}
+
+          {/* AI Typing Indicator */}
+          {chatLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 dark:bg-white/[0.05] px-4 py-3 rounded-2xl rounded-bl-md flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Chat Input */}
+        <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <input
+              ref={chatInputRef}
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+              placeholder="Describe the ad you want to run..."
+              className="flex-1 h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.02] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-gray-900 transition-colors"
+            />
+            <button
+              onClick={handleChatSend}
+              disabled={!chatInput.trim() || chatLoading}
+              className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all ${
+                chatInput.trim() && !chatLoading
+                  ? 'bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/20'
+                  : 'bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-600'
+              }`}
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
