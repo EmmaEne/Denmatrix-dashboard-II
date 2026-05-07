@@ -46,8 +46,9 @@ const TikTokIcon = ({ size = 18, className = '' }) => (
 
 /* ─── Mock Data ─── */
 const mockConnectedAccounts = [
-  { id: 1, platform: 'Facebook / Instagram', name: 'BrightSmile Dental', status: 'Connected', icon: FacebookIcon, color: '#1877F2' },
-  { id: 2, platform: 'TikTok', name: '@brightsmiledental', status: 'Connected', icon: TikTokIcon, color: '#000000' },
+  { id: 1, platform: 'Facebook', name: 'BrightSmile Dental (Main)', status: 'Connected', icon: FacebookIcon, color: '#1877F2', username: 'brightsmile_main', avatar: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=100&h=100&fit=crop' },
+  { id: 2, platform: 'Facebook', name: 'BrightSmile - Beverly Hills', status: 'Connected', icon: FacebookIcon, color: '#1877F2', username: 'brightsmile_bh', avatar: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=100&h=100&fit=crop' },
+  { id: 3, platform: 'TikTok', name: '@brightsmiledental', status: 'Connected', icon: TikTokIcon, color: '#000000', username: 'brightsmile_tiktok', avatar: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=100&h=100&fit=crop' },
 ]
 
 const mockMetrics = [
@@ -66,6 +67,13 @@ const initialCampaigns = [
   { id: 6, name: 'New Patient Welcome Offer', platform: 'Facebook', status: 'Active', budget: '$400', spend: '$295.10', ctr: '3.7%', impressions: '38.9K', clicks: '1,439', conversions: '167' },
 ]
 
+const mockDrafts = [
+  { id: 1, headline: 'Teeth Whitening Holiday Promo', caption: 'Brighten your smile for the holidays! 🎁 Get 25% off professional whitening throughout December.', platform: 'Facebook' },
+  { id: 2, headline: 'New Patient Welcome Package', caption: 'Welcome to our clinic! New patients get a free cleaning with their first exam. Book now!', platform: 'Facebook' },
+  { id: 3, headline: 'Invisalign Transformation', caption: 'See how Sarah transformed her smile in just 6 months. Ask us about Invisalign today! ✨', platform: 'TikTok' },
+  { id: 4, headline: 'Kids Dental Day', caption: 'Making dentist visits fun for kids! 🎈 Schedule your child\'s check-up for our upcoming event.', platform: 'Facebook' },
+]
+
 const platformOptions = ['All', 'Facebook', 'TikTok']
 const statusOptions = ['All', 'Active', 'Paused']
 
@@ -73,13 +81,26 @@ const statusOptions = ['All', 'Active', 'Paused']
 const stepLabels = ['Platform', 'Creative', 'Audience', 'Budget', 'Review']
 
 export default function ManageAds() {
-  /* ─── State ─── */
+  const [connectedAccounts, setConnectedAccounts] = useState(mockConnectedAccounts)
+  const [selectedAccount, setSelectedAccount] = useState(null)
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false)
+  const [addingPlatform, setAddingPlatform] = useState(null)
+  
+  // Dashboard state
   const [campaigns, setCampaigns] = useState(initialCampaigns)
   const [filterPlatform, setFilterPlatform] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createStep, setCreateStep] = useState(0)
   const [selectedCampaign, setSelectedCampaign] = useState(null)
+
+  // Drafts state
+  const [showDraftsList, setShowDraftsList] = useState(false)
+
+  // Meta Connect flow state
+  const [showMetaModal, setShowMetaModal] = useState(false)
+  const [metaStep, setMetaStep] = useState(0)
+  const [syncProgress, setSyncProgress] = useState(0)
 
   // Create campaign form state
   const [newCampaign, setNewCampaign] = useState({
@@ -101,15 +122,36 @@ export default function ManageAds() {
   }, [])
 
   const filteredCampaigns = campaigns.filter(c => {
-    const matchPlatform = filterPlatform === 'All' || c.platform === filterPlatform
+    // Automatically scope to the selected account's platform
+    const matchPlatform = c.platform === selectedAccount?.platform
     const matchStatus = filterStatus === 'All' || c.status === filterStatus
     return matchPlatform && matchStatus
   })
 
   const handleOpenCreate = () => {
-    setCreateStep(0)
-    setNewCampaign({ platform: '', headline: '', caption: '', audience: 'general', location: '', ageRange: '18-65', budget: '', duration: '7' })
+    // Start directly from Creative (step 1) since platform is pre-determined
+    setCreateStep(1)
+    setShowDraftsList(false)
+    setNewCampaign({ 
+      platform: selectedAccount.platform, 
+      headline: '', 
+      caption: '', 
+      audience: 'general', 
+      location: '', 
+      ageRange: '18-65', 
+      budget: '', 
+      duration: '7' 
+    })
     setShowCreateModal(true)
+  }
+
+  const handleApplyDraft = (draft) => {
+    setNewCampaign(prev => ({
+      ...prev,
+      headline: draft.headline,
+      caption: draft.caption
+    }))
+    setShowDraftsList(false)
   }
 
   const handleLaunch = () => {
@@ -129,67 +171,247 @@ export default function ManageAds() {
     setShowCreateModal(false)
   }
 
+  const handleAddAccount = (platform) => {
+    setAddingPlatform(platform)
+    setShowAddAccountModal(true)
+  }
+
+  const handleConnectMetaBusiness = () => {
+    setMetaStep(0)
+    setSyncProgress(0)
+    setShowMetaModal(true)
+  }
+
+  const startMetaSync = () => {
+    setMetaStep(2) // Jump to sync
+    let progress = 0
+    const interval = setInterval(() => {
+      progress += Math.random() * 15
+      if (progress >= 100) {
+        setSyncProgress(100)
+        clearInterval(interval)
+        setTimeout(() => setMetaStep(3), 600) // Go to success
+      } else {
+        setSyncProgress(progress)
+      }
+    }, 400)
+  }
+
+  const completeMetaConnection = () => {
+    setConnectedAccounts(prev => prev.map(acc => 
+      acc.id === selectedAccount.id ? { ...acc, metaConnected: true } : acc
+    ))
+    setSelectedAccount(prev => ({ ...prev, metaConnected: true }))
+    setShowMetaModal(false)
+  }
+
+  const handleConnectAccount = (e) => {
+    e.preventDefault()
+    const formData = new FormData(e.target)
+    const newAcc = {
+      id: connectedAccounts.length + 1,
+      platform: addingPlatform,
+      name: formData.get('name'),
+      username: formData.get('username'),
+      status: 'Connected',
+      icon: addingPlatform === 'TikTok' ? TikTokIcon : FacebookIcon,
+      color: addingPlatform === 'TikTok' ? '#000000' : '#1877F2',
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.get('name'))}&background=random`
+    }
+    setConnectedAccounts(prev => [...prev, newAcc])
+    setShowAddAccountModal(false)
+  }
+
   /* ─── Shared component classes (matching existing system) ─── */
   const selectClass = "h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:focus:border-brand-500 appearance-none cursor-pointer"
   const inputClass = "h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500"
 
+  // ─── Account Selection View ───
+  if (!selectedAccount) {
+    return (
+      <div className="p-6 lg:p-10 transition-colors">
+        <div className="mb-10">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Ads</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Select an ad account to continue or connect a new one</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Facebook / Instagram Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2]">
+                  <FacebookIcon size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Facebook / Instagram</h3>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
+                    {connectedAccounts.filter(a => a.platform === 'Facebook').length} Accounts Connected
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleAddAccount('Facebook')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-brand-500 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 transition-colors"
+              >
+                <Plus size={14} />
+                Add Account
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {connectedAccounts.filter(a => a.platform === 'Facebook').map(account => (
+                <button
+                  key={account.id}
+                  onClick={() => setSelectedAccount(account)}
+                  className="flex items-center justify-between p-4 rounded-2xl border border-gray-200 bg-white hover:border-brand-500 hover:shadow-theme-md dark:border-gray-800 dark:bg-white/[0.03] transition-all group text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <img src={account.avatar} className="w-12 h-12 rounded-xl object-cover" alt={account.name} />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#1877F2] border-2 border-white dark:border-gray-900 flex items-center justify-center text-white">
+                        <FacebookIcon size={10} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{account.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">@{account.username}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300 group-hover:text-brand-500 group-hover:translate-x-1 transition-all" />
+                </button>
+              ))}
+              {connectedAccounts.filter(a => a.platform === 'Facebook').length === 0 && (
+                <div className="py-8 text-center rounded-2xl border-2 border-dashed border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.01]">
+                  <p className="text-xs text-gray-400">No Facebook accounts connected</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* TikTok Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-black/10 flex items-center justify-center text-black dark:bg-white/10 dark:text-white">
+                  <TikTokIcon size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">TikTok Ads</h3>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
+                    {connectedAccounts.filter(a => a.platform === 'TikTok').length} Accounts Connected
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleAddAccount('TikTok')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-brand-500 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 transition-colors"
+              >
+                <Plus size={14} />
+                Add Account
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {connectedAccounts.filter(a => a.platform === 'TikTok').map(account => (
+                <button
+                  key={account.id}
+                  onClick={() => setSelectedAccount(account)}
+                  className="flex items-center justify-between p-4 rounded-2xl border border-gray-200 bg-white hover:border-brand-500 hover:shadow-theme-md dark:border-gray-800 dark:bg-white/[0.03] transition-all group text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <img src={account.avatar} className="w-12 h-12 rounded-xl object-cover" alt={account.name} />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black border-2 border-white dark:border-gray-900 flex items-center justify-center text-white">
+                        <TikTokIcon size={10} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{account.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{account.username}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300 group-hover:text-brand-500 group-hover:translate-x-1 transition-all" />
+                </button>
+              ))}
+              {connectedAccounts.filter(a => a.platform === 'TikTok').length === 0 && (
+                <div className="py-8 text-center rounded-2xl border-2 border-dashed border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.01]">
+                  <p className="text-xs text-gray-400">No TikTok accounts connected</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Add Account Modal */}
+        <Dialog isOpen={showAddAccountModal} onClose={() => setShowAddAccountModal(false)} title={`Connect ${addingPlatform} Account`}>
+          <form onSubmit={handleConnectAccount} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Account Name</label>
+              <input name="name" required type="text" className={inputClass} placeholder="e.g. BrightSmile Dental" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Username / ID</label>
+              <input name="username" required type="text" className={inputClass} placeholder="e.g. brightsmile_ads" />
+            </div>
+            <div className="pt-2">
+              <button type="submit" className="w-full flex items-center justify-center h-12 bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20">
+                Connect Account
+              </button>
+            </div>
+          </form>
+        </Dialog>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 lg:p-10 transition-colors">
       {/* ─── Page Header ─── */}
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Ads</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Track and manage ad campaigns across platforms</p>
-        </div>
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 h-11 px-5 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
-        >
-          <Plus size={18} />
-          Create Campaign
-        </button>
-      </div>
-
-      {/* ═══ 1. CONNECTED ACCOUNTS ═══ */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Link2 size={15} className="text-brand-500" />
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Connected Accounts</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all">
-              <FacebookIcon size={14} />
-              Connect Facebook / Instagram
-            </button>
-            <button className="flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all">
-              <TikTokIcon size={14} />
-              Connect TikTok
-            </button>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setSelectedAccount(null)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-brand-500 hover:text-brand-500 dark:border-gray-800 dark:bg-white/[0.03] transition-all"
+            title="Switch Account"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedAccount.name}</h1>
+              <span className="px-2 py-0.5 rounded-md bg-brand-50 text-[10px] font-bold text-brand-500 uppercase dark:bg-brand-500/10 border border-brand-500/20">
+                {selectedAccount.platform}
+              </span>
+            </div>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Manage campaigns and track performance</p>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-4">
-          {mockConnectedAccounts.map(account => {
-            const Icon = account.icon
-            return (
-              <div key={account.id} className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 px-4 py-3">
-                <div className="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                  <Icon size={16} className="text-gray-600 dark:text-gray-300" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{account.name}</p>
-                  <p className="text-[11px] text-gray-400">{account.platform}</p>
-                </div>
-                <div className="flex items-center gap-1.5 ml-3">
-                  <CheckCircle2 size={13} className="text-success-500" />
-                  <span className="text-[11px] font-semibold text-success-500">{account.status}</span>
-                </div>
-              </div>
-            )
-          })}
+        <div className="flex items-center gap-3">
+          {selectedAccount.platform === 'Facebook' && (
+            <button
+              onClick={handleConnectMetaBusiness}
+              className={`flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold transition-all ${
+                selectedAccount.metaConnected
+                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+                  : 'bg-white text-[#1877F2] border border-[#1877F2]/20 hover:bg-[#1877F2]/5 dark:bg-white/5 dark:text-white dark:border-white/10 dark:hover:bg-white/10'
+              }`}
+            >
+              <FacebookIcon size={18} />
+              {selectedAccount.metaConnected ? 'Meta Connected' : 'Connect Meta Business'}
+            </button>
+          )}
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 h-11 px-5 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
+          >
+            <Plus size={18} />
+            Create Campaign
+          </button>
         </div>
       </div>
+
+      {/* Removed the old Connected Accounts section as it's now handled by the selection screen */}
 
       {/* ═══ 2. METRICS OVERVIEW ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
@@ -216,18 +438,7 @@ export default function ManageAds() {
       {/* ═══ 3. FILTER BAR ═══ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] mb-6">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <select
-              value={filterPlatform}
-              onChange={(e) => setFilterPlatform(e.target.value)}
-              className={selectClass}
-            >
-              {platformOptions.map(p => <option key={p} value={p}>{p === 'All' ? 'All Platforms' : p}</option>)}
-            </select>
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"/></svg>
-            </div>
-          </div>
+          {/* Platform filter removed as it's now scoped to selectedAccount */}
 
           <div className="relative">
             <select
@@ -336,83 +547,90 @@ export default function ManageAds() {
         <div className="space-y-6">
           {/* Step indicator */}
           <div className="flex items-center gap-1">
-            {stepLabels.map((label, i) => (
-              <React.Fragment key={label}>
-                <div className="flex items-center gap-2">
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                    i < createStep ? 'bg-success-500 text-white'
-                    : i === createStep ? 'bg-brand-500 text-white'
-                    : 'bg-gray-100 text-gray-400 dark:bg-white/5'
-                  }`}>
-                    {i < createStep ? <CheckCircle2 size={14} /> : i + 1}
+            {stepLabels.slice(1).map((label, i) => {
+              const stepIndex = i + 1; // Actual step index in code
+              return (
+                <React.Fragment key={label}>
+                  <div className="flex items-center gap-2">
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                      stepIndex < createStep ? 'bg-success-500 text-white'
+                      : stepIndex === createStep ? 'bg-brand-500 text-white'
+                      : 'bg-gray-100 text-gray-400 dark:bg-white/5'
+                    }`}>
+                      {stepIndex < createStep ? <CheckCircle2 size={14} /> : i + 1}
+                    </div>
+                    <span className={`text-xs font-semibold hidden sm:inline ${stepIndex === createStep ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>{label}</span>
                   </div>
-                  <span className={`text-xs font-semibold hidden sm:inline ${i === createStep ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>{label}</span>
-                </div>
-                {i < stepLabels.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-1 rounded-full ${i < createStep ? 'bg-success-500' : 'bg-gray-100 dark:bg-white/5'}`} />
-                )}
-              </React.Fragment>
-            ))}
+                  {i < stepLabels.length - 2 && (
+                    <div className={`flex-1 h-0.5 mx-1 rounded-full ${stepIndex < createStep ? 'bg-success-500' : 'bg-gray-100 dark:bg-white/5'}`} />
+                  )}
+                </React.Fragment>
+              )
+            })}
           </div>
 
-          {/* Step 1: Platform */}
-          {createStep === 0 && (
-            <div className="space-y-4">
-              <p className="text-sm font-bold text-gray-900 dark:text-white">Choose Platform</p>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: 'Facebook', icon: FacebookIcon, label: 'Facebook / Instagram' },
-                  { id: 'TikTok', icon: TikTokIcon, label: 'TikTok' },
-                ].map(p => {
-                  const Icon = p.icon
-                  const isSelected = newCampaign.platform === p.id
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => setNewCampaign(prev => ({ ...prev, platform: p.id }))}
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                        isSelected
-                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 shadow-lg shadow-brand-500/10'
-                          : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-gray-700'
-                      }`}
-                    >
-                      <Icon size={20} className={isSelected ? 'text-brand-500' : 'text-gray-500'} />
-                      <span className={`text-sm font-semibold ${isSelected ? 'text-brand-500' : 'text-gray-700 dark:text-gray-300'}`}>{p.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Step 2: Creative */}
           {createStep === 1 && (
-            <div className="space-y-4">
-              <p className="text-sm font-bold text-gray-900 dark:text-white">Ad Creative</p>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Headline</label>
-                <input
-                  type="text"
-                  value={newCampaign.headline}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, headline: e.target.value }))}
-                  className={inputClass}
-                  placeholder="e.g. Get a Brighter Smile Today!"
-                />
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Ad Creative</p>
+                <button 
+                  onClick={() => setShowDraftsList(!showDraftsList)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-brand-500 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <Copy size={14} />
+                  {showDraftsList ? 'Cancel' : 'Import from Drafts'}
+                </button>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Caption / Description</label>
-                <textarea
-                  value={newCampaign.caption}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, caption: e.target.value }))}
-                  rows={4}
-                  className={`${inputClass} h-auto py-3 resize-none custom-scrollbar`}
-                  placeholder="Write compelling ad copy..."
-                />
-              </div>
-              <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.02] p-6 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Drag & drop media or <span className="text-brand-500 font-semibold cursor-pointer">browse files</span></p>
-                <p className="text-[11px] text-gray-400 mt-1">PNG, JPG, MP4 up to 50MB</p>
-              </div>
+
+              {showDraftsList ? (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Your saved drafts ({mockDrafts.filter(d => d.platform === selectedAccount.platform).length})</p>
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                    {mockDrafts.filter(d => d.platform === selectedAccount.platform).map(draft => (
+                      <button
+                        key={draft.id}
+                        onClick={() => handleApplyDraft(draft)}
+                        className="flex flex-col text-left p-3 rounded-xl border border-gray-100 bg-gray-50 hover:border-brand-500 hover:bg-brand-50 dark:border-gray-800 dark:bg-white/[0.02] dark:hover:border-brand-500/30 transition-all"
+                      >
+                        <span className="text-xs font-bold text-gray-900 dark:text-white mb-1">{draft.headline}</span>
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1">{draft.caption}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Headline</label>
+                    <input
+                      type="text"
+                      value={newCampaign.headline}
+                      onChange={(e) => setNewCampaign(prev => ({ ...prev, headline: e.target.value }))}
+                      className={inputClass}
+                      placeholder="e.g. Get a Brighter Smile Today!"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Caption / Description</label>
+                    <textarea
+                      value={newCampaign.caption}
+                      onChange={(e) => setNewCampaign(prev => ({ ...prev, caption: e.target.value }))}
+                      rows={4}
+                      className={`${inputClass} h-auto py-3 resize-none custom-scrollbar`}
+                      placeholder="Write compelling ad copy..."
+                    />
+                  </div>
+                </>
+              )}
+              
+              {!showDraftsList && (
+                <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.02] p-6 text-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Drag & drop media or <span className="text-brand-500 font-semibold cursor-pointer">browse files</span></p>
+                  <p className="text-[11px] text-gray-400 mt-1">PNG, JPG, MP4 up to 50MB</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -539,7 +757,7 @@ export default function ManageAds() {
 
           {/* Navigation */}
           <div className="flex items-center justify-between pt-2">
-            {createStep > 0 ? (
+            {createStep > 1 ? (
               <button
                 onClick={() => setCreateStep(s => s - 1)}
                 className="flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all"
@@ -570,7 +788,155 @@ export default function ManageAds() {
         </div>
       </Dialog>
 
-      {/* ═══ 7. CAMPAIGN DETAILS MODAL ═══ */}
+      {/* ═══ 8. META CONNECT MODAL (Multi-Step) ═══ */}
+      <Dialog isOpen={showMetaModal} onClose={() => setShowMetaModal(false)} title="Connect Meta Business Suite">
+        <div className="space-y-6">
+          {/* Step 1: Welcome & Auth */}
+          {metaStep === 0 && (
+            <div className="text-center space-y-6 py-4">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="h-20 w-20 rounded-2xl bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2]">
+                    <FacebookIcon size={40} />
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-white dark:border-gray-900 flex items-center justify-center text-white">
+                    <CheckCircle2 size={16} />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Professional Integration</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                  Connect {selectedAccount?.name} to sync your business assets, ad accounts, and advanced performance tracking.
+                </p>
+              </div>
+              <div className="pt-4">
+                <button 
+                  onClick={() => setMetaStep(1)}
+                  className="w-full flex items-center justify-center gap-3 h-14 bg-[#1877F2] text-white rounded-xl font-bold hover:bg-[#1464c7] transition-all shadow-lg shadow-[#1877F2]/20 active:scale-[0.98]"
+                >
+                  <FacebookIcon size={20} />
+                  Continue with Meta Business
+                </button>
+                <p className="mt-4 text-[11px] text-gray-400">
+                  By continuing, you agree to grant DenMatrix permission to manage your business assets and view performance data.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Asset Selection */}
+          {metaStep === 1 && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Select Business Assets</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Choose the pages and ad accounts you want to sync.</p>
+              </div>
+              
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">Pages</p>
+                {[
+                  { name: 'Elite Dental Group', selected: true },
+                  { name: 'Smile Studio (Beverly Hills)', selected: false },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2]">
+                        <FacebookIcon size={16} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.name}</span>
+                    </div>
+                    <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors ${item.selected ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 dark:border-gray-700'}`}>
+                      {item.selected && <CheckCircle2 size={14} />}
+                    </div>
+                  </div>
+                ))}
+
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1 mt-4">Ad Accounts</p>
+                <div className="flex items-center justify-between p-4 rounded-xl border border-brand-500/30 bg-brand-50/30 dark:bg-brand-500/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
+                      <Target size={16} />
+                    </div>
+                    <span className="text-sm font-bold text-brand-600 dark:text-brand-400">Main Advertising Account</span>
+                  </div>
+                  <div className="h-5 w-5 rounded-md bg-brand-500 border-2 border-brand-500 flex items-center justify-center text-white">
+                    <CheckCircle2 size={14} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  onClick={startMetaSync}
+                  className="w-full flex items-center justify-center h-12 bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20"
+                >
+                  Confirm & Sync Assets
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Syncing Animation */}
+          {metaStep === 2 && (
+            <div className="text-center py-12 space-y-8">
+              <div className="flex justify-center items-center">
+                <div className="relative w-24 h-24">
+                  <div className="absolute inset-0 rounded-full border-4 border-gray-100 dark:border-gray-800" />
+                  <div className="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <FacebookIcon size={32} className="text-[#1877F2]" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Syncing Business Data...</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Establishing secure handshake with Meta Graph API</p>
+                </div>
+                
+                <div className="max-w-xs mx-auto space-y-2">
+                  <div className="w-full h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-brand-500 transition-all duration-300 ease-out"
+                      style={{ width: `${syncProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                    <span>{Math.round(syncProgress)}% Complete</span>
+                    <span>Importing Assets</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Success */}
+          {metaStep === 3 && (
+            <div className="text-center py-8 space-y-6">
+              <div className="flex justify-center">
+                <div className="h-20 w-20 rounded-full bg-success-50 dark:bg-success-500/10 flex items-center justify-center text-success-500">
+                  <Rocket size={40} className="animate-bounce" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Connection Successful!</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                  Meta Business Suite is now fully integrated with {selectedAccount?.name}. Advanced tracking is active.
+                </p>
+              </div>
+              <div className="pt-4">
+                <button 
+                  onClick={completeMetaConnection}
+                  className="w-full flex items-center justify-center h-12 bg-success-500 text-white rounded-xl font-bold hover:bg-success-600 transition-all shadow-lg shadow-success-500/20"
+                >
+                  Enter Dashboard
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Dialog>
       <Dialog isOpen={!!selectedCampaign} onClose={() => setSelectedCampaign(null)} title="Campaign Details">
         {selectedCampaign && (() => {
           const PlatIcon = selectedCampaign.platform === 'TikTok' ? TikTokIcon : FacebookIcon

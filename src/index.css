@@ -59,7 +59,7 @@
 
 /* Specific button transition fix */
 button, a {
-  @apply transition-all duration-200;
+  @apply transition-all duration-200 cursor-pointer;
 }
 
 /* Hide scrollbars but allow behavior */

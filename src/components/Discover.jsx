@@ -330,10 +330,35 @@ export default function Discover() {
   }
 
   const handleCopyScript = () => {
-    if (selectedItem?.script) {
-      navigator.clipboard.writeText(selectedItem.script)
-      setCopiedScript(true)
-      setTimeout(() => setCopiedScript(false), 2500)
+    if (selectedItem) {
+      let fullContent = '';
+      
+      // Header and Script
+      fullContent += `${selectedItem.type === 'videos' ? 'Video Script' : 'Content Script'}\n`;
+      fullContent += `${selectedItem.script}\n\n`;
+      
+      // Viral Analysis
+      if (selectedItem.viralReasons) {
+        fullContent += `Why It Went Viral\n`;
+        const labels = {
+          hook: 'Hook Strategy',
+          emotionalTrigger: 'Emotional Trigger',
+          relatability: 'Relatability Factor',
+          timing: 'Optimal Timing',
+          format: 'Format & Structure',
+          cta: 'CTA Effectiveness'
+        };
+        
+        Object.entries(labels).forEach(([key, label]) => {
+          if (selectedItem.viralReasons[key]) {
+            fullContent += `${label}\n${selectedItem.viralReasons[key]}\n\n`;
+          }
+        });
+      }
+      
+      navigator.clipboard.writeText(fullContent.trim());
+      setCopiedScript(true);
+      setTimeout(() => setCopiedScript(false), 2500);
     }
   }
 
@@ -768,10 +793,19 @@ export default function Discover() {
                         {selectedItem.type === 'videos' ? 'Video Script' : 'Content Script'}
                       </h3>
                     </div>
-                    <div className="relative rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div 
+                      onClick={handleCopyScript}
+                      className="relative rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 overflow-hidden cursor-pointer group/script hover:border-brand-500/50 transition-all active:scale-[0.99]"
+                    >
                       <pre className="p-5 text-[13px] leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-['Outfit',sans-serif] max-h-[280px] overflow-y-auto no-scrollbar">
                         {selectedItem.script}
                       </pre>
+                      <div className="absolute top-4 right-4 opacity-0 group-hover/script:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/90 dark:bg-gray-800/90 text-[10px] font-bold text-brand-500 shadow-sm border border-gray-100 dark:border-gray-700">
+                          {copiedScript ? <CheckCheck size={12} /> : <Copy size={12} />}
+                          {copiedScript ? 'Copied!' : 'Click to copy all'}
+                        </div>
+                      </div>
                       <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-50 dark:from-gray-800/80 to-transparent pointer-events-none" />
                     </div>
                   </div>
