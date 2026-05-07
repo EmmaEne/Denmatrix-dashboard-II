@@ -21,7 +21,8 @@ import {
   Copy,
   CheckCheck,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Sparkles
 } from 'lucide-react'
 import Dialog from '../common/Dialog'
 
@@ -101,6 +102,9 @@ export default function ManageAds() {
   const [showMetaModal, setShowMetaModal] = useState(false)
   const [metaStep, setMetaStep] = useState(0)
   const [syncProgress, setSyncProgress] = useState(0)
+
+  // AI Assist state
+  const [isAiGenerating, setIsAiGenerating] = useState(false)
 
   // Create campaign form state
   const [newCampaign, setNewCampaign] = useState({
@@ -205,6 +209,19 @@ export default function ManageAds() {
     setShowMetaModal(false)
   }
 
+  const handleAiAssist = () => {
+    setIsAiGenerating(true)
+    // Mock AI generation delay
+    setTimeout(() => {
+      setNewCampaign(prev => ({
+        ...prev,
+        headline: "Professional Teeth Whitening | 50% Off First Visit",
+        caption: "Transform your smile with our expert whitening treatment. Safe, fast, and remarkably effective. Book your appointment today and join 1,000+ happy patients! ✨"
+      }))
+      setIsAiGenerating(false)
+    }, 1500)
+  }
+
   const handleConnectAccount = (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
@@ -223,8 +240,8 @@ export default function ManageAds() {
   }
 
   /* ─── Shared component classes (matching existing system) ─── */
-  const selectClass = "h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:focus:border-brand-500 appearance-none cursor-pointer"
-  const inputClass = "h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500"
+  const selectClass = "h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.02] dark:text-white/90 dark:focus:border-brand-500 dark:focus:bg-gray-900 appearance-none cursor-pointer transition-colors"
+  const inputClass = "h-11 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.02] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-gray-900 transition-colors"
 
   // ─── Account Selection View ───
   if (!selectedAccount) {
@@ -573,6 +590,27 @@ export default function ManageAds() {
           {/* Step 2: Creative */}
           {createStep === 1 && (
             <div className="space-y-6">
+              {/* AI Assist Section */}
+              <div 
+                onClick={handleAiAssist}
+                className="group p-4 rounded-xl border border-brand-500/20 bg-brand-50/30 dark:bg-brand-500/5 flex items-center justify-between gap-4 cursor-pointer hover:border-brand-500/40 hover:bg-brand-50/50 dark:hover:bg-brand-500/10 transition-all active:scale-[0.99]"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`h-8 w-8 rounded-lg ${isAiGenerating ? 'bg-gray-100 animate-pulse' : 'bg-brand-500'} flex items-center justify-center text-white shrink-0 transition-colors`}>
+                    {isAiGenerating ? <Zap size={16} className="text-gray-400 animate-spin" /> : <Sparkles size={16} />}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">AI Assist ("Auto")</h4>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">
+                      {isAiGenerating ? 'Generating optimized content...' : 'Click to generate headline, caption, and structure automatically.'}
+                    </p>
+                  </div>
+                </div>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-md shadow-brand-500/10 transition-colors">
+                  {isAiGenerating ? 'Processing...' : 'Get AI Help'}
+                </button>
+              </div>
+
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Ad Creative</p>
                 <button 
@@ -592,7 +630,7 @@ export default function ManageAds() {
                       <button
                         key={draft.id}
                         onClick={() => handleApplyDraft(draft)}
-                        className="flex flex-col text-left p-3 rounded-xl border border-gray-100 bg-gray-50 hover:border-brand-500 hover:bg-brand-50 dark:border-gray-800 dark:bg-white/[0.02] dark:hover:border-brand-500/30 transition-all"
+                        className="flex flex-col text-left p-3 rounded-xl border border-gray-100 bg-gray-50/50 hover:border-brand-500 hover:bg-brand-500/[0.04] dark:border-gray-800 dark:bg-white/[0.02] dark:hover:border-brand-500/20 transition-all"
                       >
                         <span className="text-xs font-bold text-gray-900 dark:text-white mb-1">{draft.headline}</span>
                         <span className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1">{draft.caption}</span>
