@@ -112,13 +112,21 @@ export default function ManageAds() {
   // AI Chatbot state
   const [showChat, setShowChat] = useState(false)
   const [chatMessages, setChatMessages] = useState([
-    { id: 1, role: 'ai', text: `Hi! I'm your AI Campaign Builder. Tell me about the ad you want to run — audience, budget, goal — and I'll build the campaign for you.`, timestamp: new Date() }
+    { id: 1, role: 'ai', text: `Hi! I'm your DenMatrix AI Assistant. I can help you build ad campaigns, analyze your performance, or answer any questions about the platform. What's on your mind?`, timestamp: new Date() }
   ])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
   const [chatProposal, setChatProposal] = useState(null)
   const chatEndRef = useRef(null)
   const chatInputRef = useRef(null)
+
+  const quickActions = [
+    { label: '🚀 Build Campaign', prompt: 'I want to build a new ad campaign' },
+    { label: '✍️ Improve Headline', prompt: 'Can you help me improve my ad headline?' },
+    { label: '📊 Explain Stats', prompt: 'Why is my CTR lower this week?' },
+    { label: '🎯 Targeting Advice', prompt: 'Who should I target for teeth whitening?' },
+  ]
 
   // Create campaign form state
   const [newCampaign, setNewCampaign] = useState({
@@ -294,8 +302,8 @@ export default function ManageAds() {
     }
   }
 
-  const handleChatSend = () => {
-    const text = chatInput.trim()
+  const handleChatSend = (customPrompt = null) => {
+    const text = customPrompt || chatInput.trim()
     if (!text || chatLoading) return
 
     const userMsg = { id: Date.now(), role: 'user', text, timestamp: new Date() }
@@ -303,21 +311,65 @@ export default function ManageAds() {
     setChatInput('')
     setChatLoading(true)
 
-    // Simulate AI thinking
+    // Simulate AI thinking & streaming
     setTimeout(() => {
-      const proposal = parseCampaignFromMessage(text)
-      setChatProposal(proposal)
+      const lower = text.toLowerCase()
+      let fullText = ""
+      let proposal = null
 
-      const aiMsg = {
-        id: Date.now() + 1,
-        role: 'ai',
-        text: `I've built a campaign based on your request. Here's what I suggest:`,
-        timestamp: new Date(),
-        proposal
+      // Intent logic
+      const isCampaignReq = lower.includes('ad') || lower.includes('campaign') || lower.includes('run') || lower.includes('target') || lower.includes('budget') || lower.includes('build')
+
+      if (isCampaignReq && (lower.includes('build') || lower.includes('create') || lower.includes('set up') || lower.includes(' lagos') || lower.includes('overdue'))) {
+        proposal = parseCampaignFromMessage(text)
+        fullText = `I've put together a campaign strategy based on your request. Here's a preview of the setup:`
+      } else if (lower.includes('improve') || lower.includes('headline') || lower.includes('caption')) {
+        fullText = "Of course! For dental ads, I recommend using **benefit-driven hooks**. \n\nInstead of 'We do whitening', try: \n• 'Get a Celebrity Smile in 1 Hour' \n• 'Professional Whitening - 50% Off This Week' \n\nWhich one fits your clinic's brand better?"
+      } else if (lower.includes('stats') || lower.includes('performance') || lower.includes('ctr') || lower.includes('low')) {
+        fullText = `I've analyzed your campaigns for **${selectedAccount?.name}**. \n\nYour average CTR is 2.4%, which is solid! However, the 'Overdue Patients' ad is dipping. I suggest refreshing the creative or adding an 'urgency' trigger like 'Limited Slots Available' to boost clicks.`
+      } else if (lower.includes('meta') || lower.includes('facebook') || lower.includes('connect')) {
+        fullText = "To connect your **Meta Business Suite**, use the green button in the top right. This enables real-time syncing of your ad assets and direct deployment from DenMatrix."
+      } else if (lower.includes('targeting') || lower.includes('who')) {
+        fullText = "For **Teeth Whitening**, the best ROI usually comes from targeting: \n1. Engaged shoppers (25-45) \n2. People with upcoming life events (weddings, graduations) \n3. Residents within a 10-mile radius of your clinic."
+      } else {
+        fullText = "I'm here to help with all things DenMatrix! I can build campaigns, optimize your copy, or explain your marketing data. What would you like to focus on next?"
       }
-      setChatMessages(prev => [...prev, aiMsg])
-      setChatLoading(false)
-    }, 2000)
+
+      // Streaming effect simulation
+      setIsTyping(true)
+      const aiMsgId = Date.now() + 1
+      setChatMessages(prev => [...prev, { id: aiMsgId, role: 'ai', text: '', timestamp: new Date(), isStreaming: true }])
+      
+      let currentText = ""
+      const words = fullText.split(" ")
+      let i = 0
+
+      const interval = setInterval(() => {
+        if (i < words.length) {
+          currentText += (i === 0 ? "" : " ") + words[i]
+          setChatMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, text: currentText } : m))
+          i++
+        } else {
+          clearInterval(interval)
+          setChatMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, text: fullText, proposal, isStreaming: false } : m))
+          setChatLoading(false)
+          setIsTyping(false)
+          if (proposal) setChatProposal(proposal)
+        }
+      }, 50)
+    }, 1000)
+  }
+
+  const handleRegenerate = () => {
+    const lastUserMsg = [...chatMessages].reverse().find(m => m.role === 'user')
+    if (lastUserMsg) {
+      handleChatSend(lastUserMsg.text)
+    }
+  }
+
+  const clearChat = () => {
+    setChatMessages([{ id: 1, role: 'ai', text: `Hi! I'm your DenMatrix AI Assistant. How can I help you today?`, timestamp: new Date() }])
+    setChatProposal(null)
   }
 
   const handleChatLaunch = (proposal) => {
@@ -1236,7 +1288,7 @@ export default function ManageAds() {
       </button>
 
       {/* Chat Panel */}
-      <div className={`fixed bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)] rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900 transition-all duration-300 origin-bottom-right ${
+      <div className={`fixed bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)] max-h-[calc(100vh-140px)] rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900 transition-all duration-300 origin-bottom-right flex flex-col ${
         showChat ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'
       }`}>
         {/* Chat Header */}
@@ -1255,22 +1307,35 @@ export default function ManageAds() {
         </div>
 
         {/* Chat Messages */}
-        <div className="h-[380px] overflow-y-auto p-4 space-y-4 custom-scrollbar">
-          {chatMessages.map(msg => (
+        <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar mt-4">
+          {chatMessages.map((msg, idx) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] space-y-2 ${
-                msg.role === 'user' ? '' : ''
-              }`}>
-                <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed ${
+              <div className={`max-w-[85%] space-y-2`}>
+                <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-sm ${
                   msg.role === 'user'
-                    ? 'bg-brand-500 text-white rounded-br-md'
+                    ? 'bg-brand-500 text-white rounded-br-md shadow-brand-500/10'
                     : 'bg-gray-100 text-gray-800 dark:bg-white/[0.05] dark:text-gray-200 rounded-bl-md'
                 }`}>
-                  {msg.text}
+                  {/* Simple Markdown Rendering */}
+                  <div className="whitespace-pre-wrap">
+                    {msg.text.split('\n').map((line, i) => {
+                      // Bold formatting
+                      const parts = line.split(/(\*\*.*?\*\*)/g)
+                      return (
+                        <p key={i} className={i > 0 ? 'mt-2' : ''}>
+                          {parts.map((part, j) => 
+                            part.startsWith('**') && part.endsWith('**') 
+                              ? <strong key={j} className="font-bold text-gray-900 dark:text-white">{part.slice(2, -2)}</strong> 
+                              : part
+                          )}
+                        </p>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 {/* Campaign Proposal Card */}
-                {msg.proposal && (
+                {msg.proposal && !msg.isStreaming && (
                   <div className="rounded-xl border border-gray-200 bg-gray-50/80 dark:border-gray-800 dark:bg-white/[0.03] p-4 space-y-3">
                     <div className="flex items-center gap-2 mb-1">
                       <Rocket size={14} className="text-brand-500" />
@@ -1308,9 +1373,20 @@ export default function ManageAds() {
                   </div>
                 )}
 
-                <span className="text-[9px] text-gray-400 block px-1">
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[9px] text-gray-400">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {msg.role === 'ai' && idx === chatMessages.length - 1 && !msg.isStreaming && (
+                    <button 
+                      onClick={handleRegenerate}
+                      className="text-[10px] font-bold text-brand-500 hover:text-brand-600 transition-colors flex items-center gap-1"
+                    >
+                      <Zap size={10} />
+                      Regenerate
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -1328,28 +1404,66 @@ export default function ManageAds() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Chat Input */}
-        <div className="p-3 border-t border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <input
-              ref={chatInputRef}
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-              placeholder="Describe the ad you want to run..."
-              className="flex-1 h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.02] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-gray-900 transition-colors"
-            />
+        {/* Chat Footer Actions */}
+        <div className="p-3 space-y-3 bg-gray-50/50 dark:bg-white/[0.01] border-t border-gray-100 dark:border-gray-800">
+          {/* Quick Actions */}
+          {!chatLoading && chatMessages.length < 5 && (
+            <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {quickActions.map(action => (
+                <button
+                  key={action.label}
+                  onClick={() => handleChatSend(action.prompt)}
+                  className="whitespace-nowrap px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-semibold text-gray-600 hover:border-brand-500 hover:text-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 transition-all shadow-sm"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Chat Input */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1 relative">
+              <textarea
+                ref={chatInputRef}
+                rows={1}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleChatSend()
+                  }
+                }}
+                placeholder="Ask anything about your ads..."
+                className="w-full max-h-32 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-white/30 transition-all resize-none custom-scrollbar"
+                style={{ height: 'auto' }}
+                onInput={(e) => {
+                  e.target.style.height = 'auto'
+                  e.target.style.height = e.target.scrollHeight + 'px'
+                }}
+              />
+            </div>
             <button
-              onClick={handleChatSend}
+              onClick={() => handleChatSend()}
               disabled={!chatInput.trim() || chatLoading}
-              className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all ${
+              className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all shrink-0 ${
                 chatInput.trim() && !chatLoading
                   ? 'bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/20'
                   : 'bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-600'
               }`}
             >
               <Send size={18} />
+            </button>
+          </div>
+          
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[9px] text-gray-400 font-medium">DenMatrix AI can make mistakes. Check important info.</p>
+            <button 
+              onClick={clearChat}
+              className="text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors"
+            >
+              Clear History
             </button>
           </div>
         </div>
