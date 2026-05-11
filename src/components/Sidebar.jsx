@@ -15,8 +15,8 @@ import { useSidebar } from '../context/SidebarContext'
 
 const menuItems = [
   { label: 'Home', path: '/', icon: Home },
-  { label: 'Research', path: '/research', icon: Search },
-  { label: 'Funnel', path: '/funnel', icon: Filter },
+  // { label: 'Research', path: '/research', icon: Search },
+  // { label: 'Funnel', path: '/funnel', icon: Filter },
   { 
     label: 'Content & Ads', 
     icon: Megaphone,
@@ -27,8 +27,8 @@ const menuItems = [
       { label: 'Schedule', path: '/content/schedule' },
     ],
   },
-  { label: 'CRM', path: '/crm', icon: Users },
-  { label: 'Documents', path: '/documents', icon: FileText },
+  // { label: 'CRM', path: '/crm', icon: Users },
+  // { label: 'Documents', path: '/documents', icon: FileText },
   { label: 'Chat', path: '/chat', icon: MessageSquare },
   { label: 'Help Center', path: '/help', icon: HelpCircle },
 ]

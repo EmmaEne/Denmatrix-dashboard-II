@@ -12,8 +12,8 @@ export default function InstagramPreview({ content, caption, onCaptionChange }) 
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold text-gray-900 dark:text-white leading-none">{content.clinicName || 'brightsmile_dental'}</p>
-          <p className="text-[9px] text-gray-400 mt-0.5">{content.location || 'Los Angeles, CA'}</p>
+          <p className="text-[11px] font-bold text-gray-900 dark:text-white leading-none">denmatrix_studio</p>
+          <p className="text-[9px] text-gray-400 mt-0.5">AI Production</p>
         </div>
         <MoreHorizontal size={14} className="text-gray-500 shrink-0" />
       </div>
@@ -42,7 +42,7 @@ export default function InstagramPreview({ content, caption, onCaptionChange }) 
       {/* IG Caption — editable */}
       <div className="px-3 pb-3 flex-1 overflow-y-auto no-scrollbar">
         <div className="flex gap-1.5">
-          <span className="text-[10px] font-bold text-gray-900 dark:text-white shrink-0">{(content.clinicName || 'brightsmile').toLowerCase().replace(/\s+/g, '')}</span>
+          <span className="text-[10px] font-bold text-gray-900 dark:text-white shrink-0">denmatrix_studio</span>
           <div
             contentEditable
             suppressContentEditableWarning

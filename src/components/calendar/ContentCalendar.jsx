@@ -13,7 +13,11 @@ import {
   Sparkles,
   Trash2,
   X,
-  Info
+  Info,
+  Link,
+  Unlink,
+  ExternalLink,
+  Loader2
 } from 'lucide-react'
 import Dialog from '../common/Dialog'
 
@@ -115,6 +119,11 @@ export default function ContentCalendar() {
   const [postsPerWeek, setPostsPerWeek] = useState(5)
   const [dailyPosting, setDailyPosting] = useState(false)
 
+  // Social Account Connection State
+  const [connectedSocialAccounts, setConnectedSocialAccounts] = useState([])
+  const [isConnecting, setIsConnecting] = useState(null) // null or 'platform'
+  const [dismissedOnboarding, setDismissedOnboarding] = useState(false)
+
   /* ─── Calendar data ─── */
   const calendarCells = useMemo(() => getCalendarDays(currentYear, currentMonth), [currentYear, currentMonth])
 
@@ -192,9 +201,108 @@ export default function ContentCalendar() {
     setDetailPost(null)
   }
 
+  /* ─── Social Connection ─── */
+  const handleConnectSocial = (platform) => {
+    setIsConnecting(platform)
+    // Mock connection delay
+    setTimeout(() => {
+      const newAccount = {
+        id: `sa${Date.now()}`,
+        platform,
+        username: platform === 'tiktok' ? '@dr_sarah_smiles' : platform === 'instagram' ? '@dr_sarah_inst' : 'Sarah Smiles FB',
+        avatar: `https://i.pravatar.cc/150?u=${Date.now()}`
+      }
+      setConnectedSocialAccounts(prev => [...prev, newAccount])
+      setIsConnecting(null)
+    }, 1500)
+  }
+
+  const handleDisconnectSocial = (id) => {
+    setConnectedSocialAccounts(prev => prev.filter(a => a.id !== id))
+  }
+
+  const isPlatformConnected = (platform) => connectedSocialAccounts.some(a => a.platform === platform)
+
   /* ─── Shared style tokens ─── */
   const inputClass = "h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500"
   const selectClass = "h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:focus:border-brand-500 appearance-none cursor-pointer"
+
+  const showOnboarding = connectedSocialAccounts.length === 0 && !dismissedOnboarding
+
+  if (showOnboarding) {
+    return (
+      <div className="p-6 lg:p-10 transition-colors">
+        {/* Header Alignment */}
+        <div className="mb-10">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-6 px-1">
+            Setup Required
+          </h2>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Connect your channels</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xl leading-relaxed">
+            DenMatrix helps you automate your clinical content across all social channels. 
+            Connect your accounts below to unlock your visual content calendar.
+          </p>
+        </div>
+
+        {/* Platform Connection Grid - Matching Dashboard Workflow Cards */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-10">
+          {['instagram', 'tiktok', 'facebook'].map(platKey => {
+            const plat = platformMap[platKey]
+            const PlatIcon = plat.icon
+            const connecting = isConnecting === platKey
+
+            return (
+              <div 
+                key={platKey} 
+                className="group relative text-left rounded-2xl border border-gray-200 bg-white p-7 transition-all hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03] hover:border-brand-500/30"
+              >
+                <div className="mb-6">
+                  <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${plat.bg}`}>
+                    <PlatIcon size={24} className={plat.color} />
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2 uppercase tracking-wide">{plat.label}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
+                    Schedule posts, track engagement, and automate {plat.label} stories.
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => handleConnectSocial(platKey)}
+                  disabled={connecting}
+                  className={`flex items-center justify-center gap-2 h-11 px-6 rounded-xl text-sm font-bold transition-all w-full ${
+                    connecting 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-white/5 shadow-none' 
+                    : 'bg-brand-500 text-white hover:bg-brand-600 shadow-lg shadow-brand-500/20'
+                  }`}
+                >
+                  {connecting ? <Loader2 size={16} className="animate-spin" /> : <Link size={16} />}
+                  {connecting ? 'Connecting...' : `Connect ${plat.label}`}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer info/dismiss */}
+        <div className="flex items-center gap-6 px-1">
+          <button 
+            onClick={() => setDismissedOnboarding(true)}
+            className="text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          >
+            Skip for now
+          </button>
+          <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
+          <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-500 hover:text-brand-600">
+            <Info size={14} />
+            How scheduling works
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 lg:p-10 transition-colors">
@@ -211,6 +319,60 @@ export default function ContentCalendar() {
           <Plus size={18} />
           Schedule Post
         </button>
+      </div>
+
+      {/* ─── Social Connection Section ─── */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {['instagram', 'tiktok', 'facebook'].map(platKey => {
+          const plat = platformMap[platKey]
+          const account = connectedSocialAccounts.find(a => a.platform === platKey)
+          const PlatIcon = plat.icon
+          const connecting = isConnecting === platKey
+
+          return (
+            <div key={platKey} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] flex items-center justify-between shadow-theme-xs">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${plat.bg}`}>
+                  <PlatIcon size={20} className={plat.color} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-tight">{plat.label}</p>
+                  {account ? (
+                    <p className="text-[11px] text-success-500 font-semibold flex items-center gap-1">
+                      <CheckCircle2 size={10} />
+                      {account.username}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-gray-400 font-medium">Not connected</p>
+                  )}
+                </div>
+              </div>
+              
+              {account ? (
+                <button 
+                  onClick={() => handleDisconnectSocial(account.id)}
+                  className="p-2 rounded-lg border border-gray-100 text-gray-400 hover:text-error-500 hover:bg-error-50 dark:border-gray-800 dark:hover:bg-error-500/10 transition-all"
+                  title="Disconnect"
+                >
+                  <Unlink size={16} />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handleConnectSocial(platKey)}
+                  disabled={connecting}
+                  className={`flex items-center gap-2 h-9 px-4 rounded-xl text-[11px] font-bold transition-all ${
+                    connecting 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-white/5' 
+                    : 'bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/10'
+                  }`}
+                >
+                  {connecting ? <Loader2 size={14} className="animate-spin" /> : <Link size={14} />}
+                  {connecting ? 'Connecting...' : 'Connect'}
+                </button>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* ─── Alert Banners ─── */}
@@ -449,22 +611,35 @@ export default function ContentCalendar() {
             </div>
           )}
 
-          {/* Platform */}
+          {/* Platform / Account Selector */}
           <div>
-            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Platform</label>
+            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">Publish to Account</label>
             <div className="relative">
-              <select
-                value={scheduleForm.platform}
-                onChange={(e) => setScheduleForm(f => ({ ...f, platform: e.target.value }))}
-                className={selectClass}
-              >
-                <option value="instagram">Instagram</option>
-                <option value="tiktok">TikTok</option>
-                <option value="facebook">Facebook</option>
-              </select>
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"/></svg>
-              </div>
+              {connectedSocialAccounts.length > 0 ? (
+                <>
+                  <select
+                    value={scheduleForm.platform}
+                    onChange={(e) => setScheduleForm(f => ({ ...f, platform: e.target.value }))}
+                    className={selectClass}
+                  >
+                    {connectedSocialAccounts.map(acc => (
+                      <option key={acc.id} value={acc.platform}>
+                        {platformMap[acc.platform].label} ({acc.username})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"/></svg>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 rounded-xl border border-error-500/20 bg-error-50 dark:bg-error-500/10 flex items-center gap-3">
+                  <AlertTriangle size={16} className="text-error-500 shrink-0" />
+                  <p className="text-[11px] text-error-600 dark:text-error-400 font-semibold italic">
+                    No social accounts connected. Please connect an account above to schedule posts.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -507,7 +682,12 @@ export default function ContentCalendar() {
             </button>
             <button
               onClick={handleSchedule}
-              className="flex-1 flex items-center justify-center gap-2 h-11 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
+              disabled={connectedSocialAccounts.length === 0}
+              className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-bold transition-colors shadow-lg ${
+                connectedSocialAccounts.length === 0
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-white/5 shadow-none'
+                : 'bg-brand-500 text-white hover:bg-brand-600 shadow-brand-500/20'
+              }`}
             >
               <CalendarDays size={16} />
               Schedule

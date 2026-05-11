@@ -13,6 +13,7 @@ import ContentForm from './ContentForm'
 import PlatformSelector from './PlatformSelector'
 import PhoneMockup from './PhoneMockup'
 import OutputDetails from './OutputDetails'
+import AvatarStudio from './AvatarStudio'
 
 /* ─── Mock generated content (simulates AI output) ─── */
 const mockGeneratedContent = {
@@ -43,8 +44,6 @@ export default function CreateContent() {
     'Create a short-form video script promoting professional teeth whitening services. The content should educate viewers on why professional whitening is safer and more effective than DIY methods. Include a compelling hook, key benefits, and a clear call to action for booking.'
   )
   const [inputs, setInputs] = useState({
-    clinicName: 'BrightSmile Dental',
-    location: 'Los Angeles, CA',
     audience: 'young-adults',
     goal: 'bookings',
     tone: 'friendly',
@@ -57,6 +56,7 @@ export default function CreateContent() {
   const [copiedCaption, setCopiedCaption] = useState(false)
   const [copiedScript, setCopiedScript] = useState(false)
   const [savedDraft, setSavedDraft] = useState(false)
+  const [activeView, setActiveView] = useState('generation') // 'generation' | 'studio'
 
   /* ─── Handlers ─── */
   const handleGenerate = useCallback(() => {
@@ -101,173 +101,206 @@ export default function CreateContent() {
   /* ─── Preview content object passed to phone ─── */
   const previewContent = generatedContent ? {
     ...generatedContent,
-    clinicName: inputs.clinicName,
-    location: inputs.location,
   } : {
     hook: '',
     cta: '',
     caption: '',
     hashtags: '',
-    clinicName: inputs.clinicName,
-    location: inputs.location,
   }
 
   return (
     /* Page wrapper — same pattern as Dashboard.jsx and Discover.jsx */
     <div className="p-6 lg:p-10 transition-colors">
       {/* Page header — matching Discover */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Content</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Generate AI-powered social content with live platform previews
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {activeView === 'generation' ? 'Content Studio' : 'Avatar Studio'}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {activeView === 'generation' 
+              ? 'Generate AI-powered social content with live platform previews'
+              : 'Create and manage your digital twins and voice profiles'}
+          </p>
+        </div>
+
+        {/* View Switcher */}
+        <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800/50 rounded-xl self-start md:self-auto">
+          <button
+            onClick={() => setActiveView('generation')}
+            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeView === 'generation'
+                ? 'bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Generate Content
+          </button>
+          <button
+            onClick={() => setActiveView('studio')}
+            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeView === 'studio'
+                ? 'bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Avatar Studio
+          </button>
+        </div>
       </div>
 
       {/* Two-column layout — responsive grid matching dashboard conventions */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {activeView === 'generation' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-        {/* ═══ LEFT PANEL (40% ≈ 2/5) — Input ═══ */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Card: Prompt Editor */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <PromptEditor value={prompt} onChange={setPrompt} />
-          </div>
-
-          {/* Card: Form Fields */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="flex items-center gap-2 mb-5">
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Content Settings</span>
-            </div>
-            <ContentForm inputs={inputs} onChange={setInputs} />
-          </div>
-
-          {/* Generate Button — primary action, existing button pattern */}
-          <button
-            onClick={generatedContent ? handleRegenerate : handleGenerate}
-            disabled={isGenerating}
-            className={`w-full flex items-center justify-center gap-2.5 h-12 rounded-xl font-bold text-sm transition-all duration-200 shadow-lg ${
-              isGenerating
-                ? 'bg-brand-400 text-white/80 cursor-not-allowed shadow-brand-500/10'
-                : 'bg-brand-500 text-white hover:bg-brand-600 shadow-brand-500/20 active:scale-[0.98]'
-            }`}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Generating...
-              </>
-            ) : generatedContent ? (
-              <>
-                <RefreshCw size={18} />
-                Regenerate
-              </>
-            ) : (
-              <>
-                <Wand2 size={18} />
-                Generate Content
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* ═══ RIGHT PANEL (60% ≈ 3/5) — Preview ═══ */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Card: Platform Selector + Phone Mockup */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="flex items-center gap-2 mb-5">
-              <Sparkles size={14} className="text-brand-500" />
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Live Preview</span>
+          {/* ═══ LEFT PANEL (40% ≈ 2/5) — Input ═══ */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Card: Prompt Editor */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+              <PromptEditor value={prompt} onChange={setPrompt} />
             </div>
 
-            <PlatformSelector selected={selectedPlatform} onSelect={setSelectedPlatform} />
+            {/* Card: Form Fields */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Content Settings</span>
+              </div>
+              <ContentForm inputs={inputs} onChange={setInputs} />
+            </div>
 
-            {/* Phone Mockup */}
-            {generatedContent ? (
-              <PhoneMockup
-                platform={selectedPlatform}
-                content={previewContent}
-                caption={caption}
-                onCaptionChange={setCaption}
-              />
-            ) : (
-              /* Empty state — before generation */
-              <div className="flex justify-center py-4">
-                <div className="w-[280px] aspect-[9/16] rounded-[2.5rem] border-[3px] border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.02] flex items-center justify-center">
-                  <div className="text-center px-8">
-                    <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center">
-                      <Wand2 size={22} className="text-brand-500" />
+            {/* Generate Button — primary action, existing button pattern */}
+            <button
+              onClick={generatedContent ? handleRegenerate : handleGenerate}
+              disabled={isGenerating}
+              className={`w-full flex items-center justify-center gap-2.5 h-12 rounded-xl font-bold text-sm transition-all duration-200 shadow-lg ${
+                isGenerating
+                  ? 'bg-brand-400 text-white/80 cursor-not-allowed shadow-brand-500/10'
+                  : 'bg-brand-500 text-white hover:bg-brand-600 shadow-brand-500/20 active:scale-[0.98]'
+              }`}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Generating...
+                </>
+              ) : generatedContent ? (
+                <>
+                  <RefreshCw size={18} />
+                  Regenerate
+                </>
+              ) : (
+                <>
+                  <Wand2 size={18} />
+                  Generate Content
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* ═══ RIGHT PANEL (60% ≈ 3/5) — Preview ═══ */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Card: Platform Selector + Phone Mockup */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-center gap-2 mb-5">
+                <Sparkles size={14} className="text-brand-500" />
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Live Preview</span>
+              </div>
+
+              <PlatformSelector selected={selectedPlatform} onSelect={setSelectedPlatform} />
+
+              {/* Phone Mockup */}
+              {generatedContent ? (
+                <PhoneMockup
+                  platform={selectedPlatform}
+                  content={previewContent}
+                  caption={caption}
+                  onCaptionChange={setCaption}
+                />
+              ) : (
+                /* Empty state — before generation */
+                <div className="flex justify-center py-4">
+                  <div className="w-[280px] aspect-[9/16] rounded-[2.5rem] border-[3px] border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.02] flex items-center justify-center">
+                    <div className="text-center px-8">
+                      <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center">
+                        <Wand2 size={22} className="text-brand-500" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Preview will appear here</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Generate content to see a live preview</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Preview will appear here</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Generate content to see a live preview</p>
                   </div>
                 </div>
+              )}
+
+              {/* Editable caption hint */}
+              {generatedContent && (
+                <p className="text-center text-[11px] text-gray-400 dark:text-gray-500 mt-2">
+                  💡 Click on the caption inside the preview to edit it directly
+                </p>
+              )}
+            </div>
+
+            {/* Output Details — collapsible sections */}
+            {generatedContent && (
+              <OutputDetails content={generatedContent} />
+            )}
+
+            {/* Action Buttons — reuse existing button patterns */}
+            {generatedContent && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  onClick={() => copyToClipboard(caption || generatedContent.caption, 'caption')}
+                  className={`flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all ${
+                    copiedCaption
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                      : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700'
+                  }`}
+                >
+                  {copiedCaption ? <CheckCheck size={16} /> : <Copy size={16} />}
+                  {copiedCaption ? 'Copied!' : 'Caption'}
+                </button>
+
+                <button
+                  onClick={() => copyToClipboard(generatedContent.script, 'script')}
+                  className={`flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all ${
+                    copiedScript
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                      : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700'
+                  }`}
+                >
+                  {copiedScript ? <CheckCheck size={16} /> : <Copy size={16} />}
+                  {copiedScript ? 'Copied!' : 'Script'}
+                </button>
+
+                <button
+                  onClick={handleRegenerate}
+                  disabled={isGenerating}
+                  className="flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all disabled:opacity-50"
+                >
+                  <RefreshCw size={16} className={isGenerating ? 'animate-spin' : ''} />
+                  Regenerate
+                </button>
+
+                <button
+                  onClick={handleSaveDraft}
+                  className={`flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all ${
+                    savedDraft
+                      ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20'
+                      : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700'
+                  }`}
+                >
+                  {savedDraft ? <CheckCheck size={16} /> : <Save size={16} />}
+                  {savedDraft ? 'Saved!' : 'Save Draft'}
+                </button>
               </div>
             )}
-
-            {/* Editable caption hint */}
-            {generatedContent && (
-              <p className="text-center text-[11px] text-gray-400 dark:text-gray-500 mt-2">
-                💡 Click on the caption inside the preview to edit it directly
-              </p>
-            )}
           </div>
-
-          {/* Output Details — collapsible sections */}
-          {generatedContent && (
-            <OutputDetails content={generatedContent} />
-          )}
-
-          {/* Action Buttons — reuse existing button patterns */}
-          {generatedContent && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <button
-                onClick={() => copyToClipboard(caption || generatedContent.caption, 'caption')}
-                className={`flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all ${
-                  copiedCaption
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                    : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700'
-                }`}
-              >
-                {copiedCaption ? <CheckCheck size={16} /> : <Copy size={16} />}
-                {copiedCaption ? 'Copied!' : 'Caption'}
-              </button>
-
-              <button
-                onClick={() => copyToClipboard(generatedContent.script, 'script')}
-                className={`flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all ${
-                  copiedScript
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                    : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700'
-                }`}
-              >
-                {copiedScript ? <CheckCheck size={16} /> : <Copy size={16} />}
-                {copiedScript ? 'Copied!' : 'Script'}
-              </button>
-
-              <button
-                onClick={handleRegenerate}
-                disabled={isGenerating}
-                className="flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all disabled:opacity-50"
-              >
-                <RefreshCw size={16} className={isGenerating ? 'animate-spin' : ''} />
-                Regenerate
-              </button>
-
-              <button
-                onClick={handleSaveDraft}
-                className={`flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all ${
-                  savedDraft
-                    ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20'
-                    : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700'
-                }`}
-              >
-                {savedDraft ? <CheckCheck size={16} /> : <Save size={16} />}
-                {savedDraft ? 'Saved!' : 'Save Draft'}
-              </button>
-            </div>
-          )}
         </div>
-      </div>
+      ) : (
+        <AvatarStudio onSelectAvatar={(img) => {
+          setInputs(prev => ({ ...prev, avatarImage: img }));
+          setActiveView('generation');
+        }} />
+      )}
     </div>
   )
 }

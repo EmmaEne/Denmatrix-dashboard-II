@@ -10,7 +10,7 @@ export default function FacebookPreview({ content, caption, onCaptionChange }) {
           <span className="text-[10px] font-bold text-white">BS</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold text-gray-900 dark:text-white leading-none">{content.clinicName || 'BrightSmile Dental'}</p>
+          <p className="text-[11px] font-bold text-gray-900 dark:text-white leading-none">DenMatrix Studio</p>
           <div className="flex items-center gap-1 mt-0.5">
             <p className="text-[9px] text-gray-400">Just now</p>
             <span className="text-[9px] text-gray-400">·</span>

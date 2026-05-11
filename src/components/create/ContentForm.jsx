@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Building2, MapPin, Users, Target, Volume2 } from 'lucide-react'
+import { Users, Target, Volume2 } from 'lucide-react'
 
 const inputBaseClass = "h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-500"
 
@@ -45,36 +45,6 @@ export default function ContentForm({ inputs, onChange }) {
 
   return (
     <div className="space-y-4">
-      {/* Clinic Name */}
-      <div>
-        <div className={labelClass}>
-          <Building2 size={14} className="text-gray-400" />
-          <span className={labelTextClass}>Clinic Name</span>
-        </div>
-        <input
-          type="text"
-          value={inputs.clinicName}
-          onChange={(e) => handleChange('clinicName', e.target.value)}
-          className={inputBaseClass}
-          placeholder="e.g. BrightSmile Dental"
-        />
-      </div>
-
-      {/* Location */}
-      <div>
-        <div className={labelClass}>
-          <MapPin size={14} className="text-gray-400" />
-          <span className={labelTextClass}>Location</span>
-        </div>
-        <input
-          type="text"
-          value={inputs.location}
-          onChange={(e) => handleChange('location', e.target.value)}
-          className={inputBaseClass}
-          placeholder="e.g. Los Angeles, CA"
-        />
-      </div>
-
       {/* Target Audience */}
       <div>
         <div className={labelClass}>

@@ -28,6 +28,7 @@ import {
   Bot
 } from 'lucide-react'
 import Dialog from '../common/Dialog'
+import AdOverview from './AdOverview'
 
 /* ─── Inline Platform Icons (same pattern as Discover.jsx) ─── */
 const FacebookIcon = ({ size = 18, className = '' }) => (
@@ -63,8 +64,88 @@ const mockMetrics = [
 ]
 
 const initialCampaigns = [
-  { id: 1, name: 'Teeth Whitening Promo', platform: 'Facebook', status: 'Active', budget: '$500', spend: '$342.50', ctr: '3.2%', impressions: '45.2K', clicks: '1,446', conversions: '89' },
-  { id: 2, name: 'Invisalign Awareness', platform: 'TikTok', status: 'Active', budget: '$750', spend: '$608.20', ctr: '4.8%', impressions: '92.1K', clicks: '4,420', conversions: '214' },
+  { 
+    id: 1, 
+    name: 'Teeth Whitening Promo', 
+    platform: 'Facebook', 
+    status: 'Active', 
+    budget: '$500', 
+    spend: '$342.50', 
+    duration: '14 days',
+    ctr: '3.2%', 
+    impressions: '45,200', 
+    reach: '38,400',
+    clicks: '1,446', 
+    cpc: '$0.24',
+    cpm: '$7.58',
+    conversions: '89',
+    leads: '124',
+    bookings: '42',
+    cpa: '$3.85',
+    cpl: '$2.76',
+    revenue: '$4,250',
+    roas: '12.4x',
+    frequency: '1.18',
+    creative: {
+      type: 'image',
+      url: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&q=80',
+      headline: 'Get a Brighter Smile Today!',
+      copy: 'Transform your smile with our professional whitening treatment. Limited time offer!'
+    },
+    audience: {
+      location: 'Los Angeles, CA',
+      age: '18-45',
+      interests: 'Beauty, Health, Self-care'
+    },
+    comments: [
+      { id: 1, user: 'Sarah J.', text: 'Is this safe for sensitive teeth?', date: '2h ago' },
+      { id: 2, user: 'Mike R.', text: 'Just booked mine! Can\'t wait.', date: '5h ago' }
+    ],
+    aiAnalysis: "This campaign is performing above average for your industry. The ROAS is exceptional at 12.4x. Recommendation: Increase daily budget by 20% to capture more of the high-converting audience."
+  },
+  { 
+    id: 2, 
+    name: 'Invisalign Awareness', 
+    platform: 'TikTok', 
+    status: 'Active', 
+    budget: '$750', 
+    spend: '$608.20', 
+    duration: '30 days',
+    ctr: '4.8%', 
+    impressions: '92,100', 
+    reach: '75,200',
+    clicks: '4,420', 
+    cpc: '$0.14',
+    cpm: '$6.60',
+    conversions: '214',
+    leads: '310',
+    bookings: '86',
+    cpa: '$2.84',
+    cpl: '$1.96',
+    revenue: '$18,500',
+    roas: '30.4x',
+    frequency: '1.22',
+    videoMetrics: {
+      watchTime: '4.2s',
+      retention: '68%',
+      hookRate: '72%'
+    },
+    creative: {
+      type: 'video',
+      url: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&q=80',
+      headline: 'The Invisible Way to Straighten Teeth',
+      copy: 'No wires, no brackets, just results. Start your journey today!'
+    },
+    audience: {
+      location: 'United States',
+      age: '16-35',
+      interests: 'Fashion, Lifestyle, Dental Health'
+    },
+    comments: [
+      { id: 1, user: 'Jake W.', text: 'How long does the treatment take?', date: '1h ago' }
+    ],
+    aiAnalysis: "Strong hook rate (72%) is driving high engagement. TikTok is proving to be a highly efficient channel for lead generation. Recommendation: Test a new variation of the first 3 seconds of the video to maintain the high hook rate."
+  },
   { id: 3, name: 'Kids Dental Check-Up', platform: 'Facebook', status: 'Paused', budget: '$300', spend: '$187.00', ctr: '2.1%', impressions: '28.3K', clicks: '594', conversions: '42' },
   { id: 4, name: 'Summer Smile Makeover', platform: 'TikTok', status: 'Active', budget: '$1,000', spend: '$821.30', ctr: '5.1%', impressions: '118.4K', clicks: '6,038', conversions: '312' },
   { id: 5, name: 'Emergency Dental Care', platform: 'Facebook', status: 'Paused', budget: '$250', spend: '$125.80', ctr: '1.8%', impressions: '15.6K', clicks: '280', conversions: '18' },
@@ -122,10 +203,10 @@ export default function ManageAds() {
   const chatInputRef = useRef(null)
 
   const quickActions = [
-    { label: '🚀 Build Campaign', prompt: 'I want to build a new ad campaign' },
-    { label: '✍️ Improve Headline', prompt: 'Can you help me improve my ad headline?' },
-    { label: '📊 Explain Stats', prompt: 'Why is my CTR lower this week?' },
-    { label: '🎯 Targeting Advice', prompt: 'Who should I target for teeth whitening?' },
+    { label: '🏆 Best Performer', prompt: 'Which ad is performing best?' },
+    { label: '📉 Why low CTR?', prompt: 'Why is my CTR lower this week?' },
+    { label: '📅 Booking Stats', prompt: 'How many bookings came from my ads?' },
+    { label: '🚀 Optimization', prompt: 'What should we improve in our campaigns?' },
   ]
 
   // Create campaign form state
@@ -319,18 +400,28 @@ export default function ManageAds() {
 
       // Intent logic
       const isCampaignReq = lower.includes('ad') || lower.includes('campaign') || lower.includes('run') || lower.includes('target') || lower.includes('budget') || lower.includes('build')
-
-      if (isCampaignReq && (lower.includes('build') || lower.includes('create') || lower.includes('set up') || lower.includes(' lagos') || lower.includes('overdue'))) {
+      
+      // Real-time questions about performance
+      if (lower.includes('performing best') || lower.includes('highest ctr') || lower.includes('best ad')) {
+        const bestAd = [...campaigns].sort((a, b) => parseFloat(b.ctr) - parseFloat(a.ctr))[0]
+        fullText = `The **${bestAd.name}** campaign is currently performing best with a **${bestAd.ctr} CTR**. It has generated ${bestAd.conversions} conversions so far on ${bestAd.platform}.`
+      } else if (lower.includes('underperforming') || lower.includes('why') || lower.includes('low')) {
+        const worstAd = [...campaigns].sort((a, b) => parseFloat(a.ctr) - parseFloat(b.ctr))[0]
+        fullText = `The **${worstAd.name}** campaign is underperforming with a **${worstAd.ctr} CTR**. This might be due to the creative format or audience fatigue. I recommend refreshing the headline or testing a new image/video.`
+      } else if (lower.includes('roas')) {
+        if (selectedCampaign) {
+          fullText = `The ROAS for **${selectedCampaign.name}** is **${selectedCampaign.roas || 'N/A'}**. This represents a return of $${selectedCampaign.revenue || '0'} on a spend of ${selectedCampaign.spend}.`
+        } else {
+          fullText = "Which campaign's ROAS would you like to check? You can click on any ad to see its detailed breakdown."
+        }
+      } else if (lower.includes('bookings') || lower.includes('conversions')) {
+        const totalBookings = campaigns.reduce((acc, c) => acc + (parseInt(c.bookings) || 0), 0)
+        fullText = `You've had a total of **${totalBookings} bookings** across all active campaigns this month. The **Invisalign Awareness** campaign is the leader with 86 bookings.`
+      } else if (lower.includes('improve') || lower.includes('recommendation')) {
+        fullText = "Based on current data, I recommend: \n1. **Increase budget** for the Invisalign campaign (30x ROAS). \n2. **Refresh creative** for the Emergency Dental Care ad. \n3. **Tighten targeting** for the Whitening promo to focus on high-intent zip codes."
+      } else if (isCampaignReq && (lower.includes('build') || lower.includes('create') || lower.includes('set up') || lower.includes(' lagos') || lower.includes('overdue'))) {
         proposal = parseCampaignFromMessage(text)
         fullText = `I've put together a campaign strategy based on your request. Here's a preview of the setup:`
-      } else if (lower.includes('improve') || lower.includes('headline') || lower.includes('caption')) {
-        fullText = "Of course! For dental ads, I recommend using **benefit-driven hooks**. \n\nInstead of 'We do whitening', try: \n• 'Get a Celebrity Smile in 1 Hour' \n• 'Professional Whitening - 50% Off This Week' \n\nWhich one fits your clinic's brand better?"
-      } else if (lower.includes('stats') || lower.includes('performance') || lower.includes('ctr') || lower.includes('low')) {
-        fullText = `I've analyzed your campaigns for **${selectedAccount?.name}**. \n\nYour average CTR is 2.4%, which is solid! However, the 'Overdue Patients' ad is dipping. I suggest refreshing the creative or adding an 'urgency' trigger like 'Limited Slots Available' to boost clicks.`
-      } else if (lower.includes('meta') || lower.includes('facebook') || lower.includes('connect')) {
-        fullText = "To connect your **Meta Business Suite**, use the green button in the top right. This enables real-time syncing of your ad assets and direct deployment from DenMatrix."
-      } else if (lower.includes('targeting') || lower.includes('who')) {
-        fullText = "For **Teeth Whitening**, the best ROI usually comes from targeting: \n1. Engaged shoppers (25-45) \n2. People with upcoming life events (weddings, graduations) \n3. Residents within a 10-mile radius of your clinic."
       } else {
         fullText = "I'm here to help with all things DenMatrix! I can build campaigns, optimize your copy, or explain your marketing data. What would you like to focus on next?"
       }
@@ -1165,114 +1256,11 @@ export default function ManageAds() {
           )}
         </div>
       </Dialog>
-      <Dialog isOpen={!!selectedCampaign} onClose={() => setSelectedCampaign(null)} title="Campaign Details">
-        {selectedCampaign && (() => {
-          const PlatIcon = selectedCampaign.platform === 'TikTok' ? TikTokIcon : FacebookIcon
-          return (
-            <div className="space-y-6">
-              {/* Campaign header */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
-                  <PlatIcon size={18} className="text-gray-600 dark:text-gray-300" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{selectedCampaign.name}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-400">{selectedCampaign.platform}</span>
-                    <span className="text-xs text-gray-400">•</span>
-                    <span className={`inline-flex items-center gap-1 text-xs font-bold ${
-                      selectedCampaign.status === 'Active' ? 'text-success-500' : 'text-gray-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${selectedCampaign.status === 'Active' ? 'bg-success-500' : 'bg-gray-400'}`} />
-                      {selectedCampaign.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: 'Impressions', value: selectedCampaign.impressions, icon: Eye, color: 'text-brand-500' },
-                  { label: 'Clicks', value: selectedCampaign.clicks, icon: MousePointerClick, color: 'text-emerald-500' },
-                  { label: 'CTR', value: selectedCampaign.ctr, icon: TrendingUp, color: 'text-violet-500' },
-                  { label: 'Conversions', value: selectedCampaign.conversions, icon: Target, color: 'text-amber-500' },
-                ].map(stat => {
-                  const StatIcon = stat.icon
-                  return (
-                    <div key={stat.label} className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 p-4">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <StatIcon size={14} className={stat.color} />
-                        <span className="text-[11px] font-semibold text-gray-400 uppercase">{stat.label}</span>
-                      </div>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Budget breakdown */}
-              <div className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 p-5">
-                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <BarChart3 size={14} className="text-brand-500" />
-                  Budget & Spend
-                </h4>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-500">Spent</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{selectedCampaign.spend} / {selectedCampaign.budget}</span>
-                </div>
-                {/* Progress bar */}
-                <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-brand-500 transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (parseFloat(selectedCampaign.spend.replace(/[$,]/g, '')) / parseFloat(selectedCampaign.budget.replace(/[$,]/g, ''))) * 100)}%`
-                    }}
-                  />
-                </div>
-                <p className="text-[11px] text-gray-400 mt-2">
-                  {Math.round((parseFloat(selectedCampaign.spend.replace(/[$,]/g, '')) / parseFloat(selectedCampaign.budget.replace(/[$,]/g, ''))) * 100)}% of budget used
-                </p>
-              </div>
-
-              {/* Performance chart placeholder */}
-              <div className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 p-5">
-                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <TrendingUp size={14} className="text-emerald-500" />
-                  Daily Performance (Last 7 Days)
-                </h4>
-                {/* Simple bar chart using divs */}
-                <div className="flex items-end gap-2 h-28">
-                  {[35, 52, 48, 72, 65, 80, 68].map((v, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div
-                        className="w-full rounded-t-md bg-brand-500/80 dark:bg-brand-500/60 transition-all hover:bg-brand-500"
-                        style={{ height: `${v}%` }}
-                      />
-                      <span className="text-[9px] text-gray-400">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { toggleCampaignStatus(selectedCampaign.id); setSelectedCampaign(null) }}
-                  className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-gray-700 transition-all"
-                >
-                  {selectedCampaign.status === 'Active' ? <Pause size={16} /> : <Play size={16} />}
-                  {selectedCampaign.status === 'Active' ? 'Pause Campaign' : 'Resume Campaign'}
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-2 h-11 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20">
-                  <Pencil size={16} />
-                  Edit Campaign
-                </button>
-              </div>
-            </div>
-          )
-        })()}
-      </Dialog>
+      <AdOverview 
+        ad={selectedCampaign} 
+        onClose={() => setSelectedCampaign(null)} 
+        onToggleStatus={toggleCampaignStatus}
+      />
 
       {/* ═══ AI CHATBOT ═══ */}
       {/* Floating Chat Toggle */}

@@ -49,7 +49,7 @@ export default function TikTokPreview({ content, caption, onCaptionChange }) {
           <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
             <span className="text-[8px] font-bold text-white">BS</span>
           </div>
-          <span className="text-[11px] font-bold text-white">@{(content.clinicName || 'brightsmile').toLowerCase().replace(/\s+/g, '')}</span>
+          <span className="text-[11px] font-bold text-white">@denmatrix</span>
           <span className="text-[9px] px-2 py-0.5 rounded-md border border-white/30 text-white font-semibold">Follow</span>
         </div>
         <div
@@ -65,7 +65,7 @@ export default function TikTokPreview({ content, caption, onCaptionChange }) {
         )}
         <div className="flex items-center gap-1.5 mt-2">
           <Music size={10} className="text-white/60" />
-          <p className="text-[9px] text-white/60">Original audio — {content.clinicName || 'BrightSmile Dental'}</p>
+          <p className="text-[9px] text-white/60">Original audio — DenMatrix Studio</p>
         </div>
       </div>
     </div>
